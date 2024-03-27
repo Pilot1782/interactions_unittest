@@ -8,8 +8,6 @@ from interactions import (
     OptionType, Embed,
 )
 
-import interactions_unittest as itest
-
 
 @slash_command(
     name="test",
@@ -36,14 +34,3 @@ async def test_slash(ctx: SlashContext, option: str = None) -> None:
     await msg.edit(content=f"The message has changed! You chose {option} as your option.", context=ctx)
 
     await ctx.delete(msg)
-
-
-async def test():
-    actions = await itest.call_slash(test_slash, option="test")
-
-    for act in actions:
-        print(json.dumps(act, indent=4))
-
-
-if __name__ == "__main__":
-    asyncio.run(test())
