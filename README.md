@@ -59,3 +59,4 @@ Each action dict has the following keys:
 - [X] message.edit
 - [X] message.reply
 - [X] message.react
+- [X] extensions

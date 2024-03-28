@@ -269,18 +269,20 @@ class FakeHttp(HTTPClient):
         self.actions += ({"action": "create_reaction", "message_id": to_snowflake(message_id), "emoji": emoji},)
 
 
-async def call_slash(func: typing.Callable, *args, **kwargs):
+async def call_slash(func: typing.Callable, *args, _client: FakeClient = None, **kwargs):
     """
     Call a slash command function with the given arguments.
-    :param func:
-    :param args:
-    :param kwargs:
+
+    :param func: The function to call.
+    :param _client: A FakeClient instance to use.
+    :param args: The positional arguments to pass to the function.
+    :param kwargs: The keyword arguments to pass to the function.
     :return:
     """
 
     # default_kwargs
 
-    client = FakeClient()
+    client = FakeClient() or _client
     client.add_interaction(func)
     ctx = FakeSlashContext(client)
     ctx.args = args
@@ -289,3 +291,7 @@ async def call_slash(func: typing.Callable, *args, **kwargs):
     await func(ctx, *args, **kwargs)
 
     return deepcopy(ctx.actions)
+
+
+def get_client() -> FakeClient:
+    return FakeClient()
