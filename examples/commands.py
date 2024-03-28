@@ -1,6 +1,3 @@
-import asyncio
-import json
-
 from interactions import (
     slash_command,
     SlashContext,
@@ -33,4 +30,4 @@ async def test_slash(ctx: SlashContext, option: str = None) -> None:
 
     await msg.edit(content=f"The message has changed! You chose {option} as your option.", context=ctx)
 
-    await ctx.delete(msg)
+    await msg.delete(context=ctx)

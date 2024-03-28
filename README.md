@@ -3,5 +3,7 @@
 - [X] context.delete message
 - [X] context.send message
 - [X] context.defer
-- [ ] message.delete
-- [X] message.edit (with context)
+- [X] message.delete
+- [X] message.edit
+- [X] message.reply
+- [X] message.react

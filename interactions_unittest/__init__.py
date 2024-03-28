@@ -17,6 +17,7 @@ from interactions import (
     UPLOADABLE_TYPE,
     MessageFlags, models, to_snowflake, Attachment, process_message_payload,
 )
+from interactions.api.http.http_client import HTTPClient
 
 
 def random_snowflake() -> int:
@@ -32,8 +33,8 @@ class FakeSlashContext(SlashContext):
     __slots__ = ("actions", "_fake_cache", "http")
 
     def __init__(self, client: "interactions.Client"):
-        self.actions = ()
-        self._fake_cache = {}
+        self.actions = client.actions
+        self._fake_cache = client._fake_cache
         super().__init__(client)
         self.http = self
 
@@ -177,7 +178,8 @@ class FakeSlashContext(SlashContext):
         Args:
             message: The message to delete. Defaults to @original which represents the initial response message.
         """
-        self.actions += ({"action": "delete", "message_id": to_snowflake(message) if message != "@original" else message},)
+        self.actions += (
+            {"action": "delete", "message_id": to_snowflake(message) if message != "@original" else message},)
         del self._fake_cache[to_snowflake(message) if message != "@original" else message]
 
     async def edit(
@@ -213,7 +215,8 @@ class FakeSlashContext(SlashContext):
         )
 
         self._fake_cache[to_snowflake(message) if message != "@original" else message].update_from_dict(message_payload)
-        message_data = deepcopy(self._fake_cache[to_snowflake(message) if message != "@original" else message].to_dict())
+        message_data = deepcopy(
+            self._fake_cache[to_snowflake(message) if message != "@original" else message].to_dict())
         message_data["id"] = to_snowflake(message) if message != "@original" else message
 
         if "embeds" in message_data:
@@ -227,7 +230,43 @@ class FakeSlashContext(SlashContext):
 
 
 class FakeClient(Client):
-    ...
+    __slots__ = ("_fake_cache", "actions")
+
+    def __init__(self, *args, **kwargs):
+        self._fake_cache = {}
+        self.actions = ()
+        super().__init__(*args, **kwargs)
+
+
+class FakeHttp(HTTPClient):
+    def __init__(self, *args, client: FakeClient, **kwargs):
+        self.client = client
+        self.actions = self.client.actions
+        self._fake_cache = self.client._fake_cache
+        super().__init__(*args, **kwargs)
+
+    async def delete_message(
+            self, channel_id: "Snowflake_Type", message_id: "Snowflake_Type", reason: str | None = None
+    ) -> None:
+        self.actions += ({"action": "delete", "message_id": to_snowflake(message_id)},)
+        del self._fake_cache[to_snowflake(message_id)]
+
+    async def edit_message(
+            self,
+            payload: dict,
+            channel_id: "Snowflake_Type",
+            message_id: "Snowflake_Type",
+            files: list["UPLOADABLE_TYPE"] | None = None,
+    ) -> "Message":
+        message = self._fake_cache[to_snowflake(message_id)]
+        message.update_from_dict(payload)
+        self._fake_cache[to_snowflake(message_id)] = message
+        self.actions += ({"action": "edit", "message": message.to_dict()},)
+        return message
+
+    async def create_reaction(self, channel_id: "Snowflake_Type", message_id: "Snowflake_Type", emoji: str) -> None:
+        self._fake_cache[to_snowflake(message_id)].reactions.append(emoji)
+        self.actions += ({"action": "create_reaction", "message_id": to_snowflake(message_id), "emoji": emoji},)
 
 
 async def call_slash(func: typing.Callable, *args, **kwargs):
