@@ -1,12 +1,11 @@
-import json
 import unittest
-from interactions_unittest import call_slash
+
 from commands import test_slash
+from interactions_unittest import call_slash
 
 
 class TestCommands(unittest.IsolatedAsyncioTestCase):
     async def test_test_slash(self):
-
         actions = await call_slash(test_slash, option="test")
 
         self.assertTrue(len(actions) == 4)
