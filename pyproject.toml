@@ -4,3 +4,28 @@ requires = [
     "wheel"
 ]
 build-backend = "setuptools.build_meta"
+
+[project]
+name = "interactions_unittest"
+version = "1.0"
+authors = [
+    { name="Pilot1782", email="34791564a@gmail.com" },
+]
+description = "Unofficial unittest extension for discord-py-interactions"
+readme = "README.md"
+requires-python = ">=3.11"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "discord-py-interactions"
+]
+dynamic = [
+    "license"
+]
+
+[project.urls]
+Homepage = "https://github.com/Pilot1782/interactions_unittest"
+Issues = "https://github.com/Pilot1782/interactions_unittest/issues"
