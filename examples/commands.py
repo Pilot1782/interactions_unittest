@@ -50,4 +50,10 @@ class MyExtension(interactions.Extension):
     async def ping_slash(self, ctx: interactions.SlashContext, option: str = None) -> None:
         await ctx.defer(ephemeral=True)
 
-        await ctx.send(f"Pong! You chose {option} as your option.")
+        msg = await ctx.send(f"Please hold...")
+
+        await msg.edit(context=ctx, embed=interactions.Embed(
+            title="Pong!",
+            description=f"Hello, World! You chose {option} as your option.",
+            color=0x00FF00,
+        ))

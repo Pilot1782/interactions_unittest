@@ -236,6 +236,7 @@ class FakeClient(Client):
         self._fake_cache = {}
         self.actions = ()
         super().__init__(*args, **kwargs)
+        self.http = FakeHttp(client=self)
 
 
 class FakeHttp(HTTPClient):
