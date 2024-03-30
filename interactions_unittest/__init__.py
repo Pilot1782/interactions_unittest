@@ -9,12 +9,7 @@ from interactions import (
     Client,
     Message,
     Embed,
-    BaseComponent,
-    Sticker,
     Snowflake_Type,
-    AllowedMentions,
-    MessageReference,
-    UPLOADABLE_TYPE,
     MessageFlags, models, to_snowflake, Attachment, process_message_payload,
 )
 from interactions.api.http.http_client import HTTPClient
