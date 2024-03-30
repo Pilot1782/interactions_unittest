@@ -5,16 +5,21 @@ from os import urandom
 
 import interactions
 from interactions import (
+    UPLOADABLE_TYPE,
+    AllowedMentions,
     Attachment,
+    BaseComponent,
     Client,
     Embed,
     Message,
     MessageFlags,
+    MessageReference,
     SlashContext,
     Snowflake_Type,
+    Sticker,
     models,
     process_message_payload,
-    to_snowflake, BaseComponent, Sticker, AllowedMentions, MessageReference, UPLOADABLE_TYPE,
+    to_snowflake,
 )
 from interactions.api.http.http_client import HTTPClient
 
