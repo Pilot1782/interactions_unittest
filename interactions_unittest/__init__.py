@@ -5,18 +5,13 @@ from os import urandom
 
 import interactions
 from interactions import (
-    UPLOADABLE_TYPE,
-    AllowedMentions,
     Attachment,
-    BaseComponent,
     Client,
     Embed,
     Message,
     MessageFlags,
-    MessageReference,
     SlashContext,
     Snowflake_Type,
-    Sticker,
     models,
     process_message_payload,
     to_snowflake,
