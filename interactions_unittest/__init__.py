@@ -5,23 +5,29 @@ from os import urandom
 
 import interactions
 from interactions import (
-    SlashContext,
-    Client,
-    Message,
-    Embed,
-    BaseComponent,
-    Sticker,
-    Snowflake_Type,
-    AllowedMentions,
-    MessageReference,
     UPLOADABLE_TYPE,
-    MessageFlags, models, to_snowflake, Attachment, process_message_payload,
+    AllowedMentions,
+    Attachment,
+    BaseComponent,
+    Client,
+    Embed,
+    Message,
+    MessageFlags,
+    MessageReference,
+    SlashContext,
+    Snowflake_Type,
+    Sticker,
+    models,
+    process_message_payload,
+    to_snowflake,
 )
 from interactions.api.http.http_client import HTTPClient
 
 
 def random_snowflake() -> int:
-    timestamp = int((datetime.datetime.now() - datetime.datetime(2015, 1, 1)).total_seconds() * 1000)
+    timestamp = int(
+        (datetime.datetime.now() - datetime.datetime(2015, 1, 1)).total_seconds() * 1000
+    )
     worker = int("0x" + urandom(5).hex(), 0)
     process = int("0x" + urandom(5).hex(), 0)
     increment = int("0x" + urandom(12).hex(), 0)
@@ -50,39 +56,46 @@ class FakeSlashContext(SlashContext):
         self.actions += ({"action": "defer", "ephemeral": ephemeral},)
 
     async def send(
-            self,
-            content: typing.Optional[str] = None,
-            *,
-            embeds: typing.Optional[
-                typing.Union[typing.Iterable[typing.Union["Embed", dict]], typing.Union["Embed", dict]]
-            ] = None,
-            embed: typing.Optional[typing.Union["Embed", dict]] = None,
-            components: typing.Optional[
-                typing.Union[
-                    typing.Iterable[typing.Iterable[typing.Union["BaseComponent", dict]]],
-                    typing.Iterable[typing.Union["BaseComponent", dict]],
-                    "BaseComponent",
-                    dict,
-                ]
-            ] = None,
-            stickers: typing.Optional[
-                typing.Union[
-                    typing.Iterable[typing.Union["Sticker", "Snowflake_Type"]],
-                    "Sticker",
-                    "Snowflake_Type",
-                ]
-            ] = None,
-            allowed_mentions: typing.Optional[typing.Union["AllowedMentions", dict]] = None,
-            reply_to: typing.Optional[typing.Union["MessageReference", "Message", dict, "Snowflake_Type"]] = None,
-            files: typing.Optional[typing.Union["UPLOADABLE_TYPE", typing.Iterable["UPLOADABLE_TYPE"]]] = None,
-            file: typing.Optional["UPLOADABLE_TYPE"] = None,
-            tts: bool = False,
-            suppress_embeds: bool = False,
-            silent: bool = False,
-            flags: typing.Optional[typing.Union[int, "MessageFlags"]] = None,
-            delete_after: typing.Optional[float] = None,
-            ephemeral: bool = False,
-            **kwargs: typing.Any,
+        self,
+        content: typing.Optional[str] = None,
+        *,
+        embeds: typing.Optional[
+            typing.Union[
+                typing.Iterable[typing.Union["Embed", dict]],
+                typing.Union["Embed", dict],
+            ]
+        ] = None,
+        embed: typing.Optional[typing.Union["Embed", dict]] = None,
+        components: typing.Optional[
+            typing.Union[
+                typing.Iterable[typing.Iterable[typing.Union["BaseComponent", dict]]],
+                typing.Iterable[typing.Union["BaseComponent", dict]],
+                "BaseComponent",
+                dict,
+            ]
+        ] = None,
+        stickers: typing.Optional[
+            typing.Union[
+                typing.Iterable[typing.Union["Sticker", "Snowflake_Type"]],
+                "Sticker",
+                "Snowflake_Type",
+            ]
+        ] = None,
+        allowed_mentions: typing.Optional[typing.Union["AllowedMentions", dict]] = None,
+        reply_to: typing.Optional[
+            typing.Union["MessageReference", "Message", dict, "Snowflake_Type"]
+        ] = None,
+        files: typing.Optional[
+            typing.Union["UPLOADABLE_TYPE", typing.Iterable["UPLOADABLE_TYPE"]]
+        ] = None,
+        file: typing.Optional["UPLOADABLE_TYPE"] = None,
+        tts: bool = False,
+        suppress_embeds: bool = False,
+        silent: bool = False,
+        flags: typing.Optional[typing.Union[int, "MessageFlags"]] = None,
+        delete_after: typing.Optional[float] = None,
+        ephemeral: bool = False,
+        **kwargs: typing.Any,
     ) -> "Message":
         """
         Send a message.
@@ -128,12 +141,15 @@ class FakeSlashContext(SlashContext):
             flags = flags | MessageFlags.SILENT
 
         if (
-                files
-                and (
+            files
+            and (
                 isinstance(files, typing.Iterable)
-                and any(isinstance(file, interactions.models.discord.message.Attachment) for file in files)
-        )
-                or isinstance(files, interactions.models.discord.message.Attachment)
+                and any(
+                    isinstance(file, interactions.models.discord.message.Attachment)
+                    for file in files
+                )
+            )
+            or isinstance(files, interactions.models.discord.message.Attachment)
         ):
             raise ValueError(
                 "Attachments are not files. Attachments only contain metadata about the file, not the file itself - to send an attachment, you need to download it first. Check Attachment.url"
@@ -156,9 +172,7 @@ class FakeSlashContext(SlashContext):
 
         if "embeds" in message_data:
             message_data["embeds"] = [
-                embed.to_dict()
-                if isinstance(embed, Embed)
-                else embed
+                embed.to_dict() if isinstance(embed, Embed) else embed
                 for embed in message_data["embeds"]
             ]
 
@@ -179,31 +193,44 @@ class FakeSlashContext(SlashContext):
             message: The message to delete. Defaults to @original which represents the initial response message.
         """
         self.actions += (
-            {"action": "delete", "message_id": to_snowflake(message) if message != "@original" else message},)
-        del self._fake_cache[to_snowflake(message) if message != "@original" else message]
+            {
+                "action": "delete",
+                "message_id": (
+                    to_snowflake(message) if message != "@original" else message
+                ),
+            },
+        )
+        del self._fake_cache[
+            to_snowflake(message) if message != "@original" else message
+        ]
 
     async def edit(
-            self,
-            message: "Snowflake_Type" = "@original",
-            *,
-            content: typing.Optional[str] = None,
-            embeds: typing.Optional[
-                typing.Union[typing.Iterable[typing.Union["Embed", dict]], typing.Union["Embed", dict]]
-            ] = None,
-            embed: typing.Optional[typing.Union["Embed", dict]] = None,
-            components: typing.Optional[
-                typing.Union[
-                    typing.Iterable[typing.Iterable[typing.Union["BaseComponent", dict]]],
-                    typing.Iterable[typing.Union["BaseComponent", dict]],
-                    "BaseComponent",
-                    dict,
-                ]
-            ] = None,
-            attachments: typing.Optional[typing.Sequence[Attachment | dict]] = None,
-            allowed_mentions: typing.Optional[typing.Union["AllowedMentions", dict]] = None,
-            files: typing.Optional[typing.Union["UPLOADABLE_TYPE", typing.Iterable["UPLOADABLE_TYPE"]]] = None,
-            file: typing.Optional["UPLOADABLE_TYPE"] = None,
-            tts: bool = False,
+        self,
+        message: "Snowflake_Type" = "@original",
+        *,
+        content: typing.Optional[str] = None,
+        embeds: typing.Optional[
+            typing.Union[
+                typing.Iterable[typing.Union["Embed", dict]],
+                typing.Union["Embed", dict],
+            ]
+        ] = None,
+        embed: typing.Optional[typing.Union["Embed", dict]] = None,
+        components: typing.Optional[
+            typing.Union[
+                typing.Iterable[typing.Iterable[typing.Union["BaseComponent", dict]]],
+                typing.Iterable[typing.Union["BaseComponent", dict]],
+                "BaseComponent",
+                dict,
+            ]
+        ] = None,
+        attachments: typing.Optional[typing.Sequence[Attachment | dict]] = None,
+        allowed_mentions: typing.Optional[typing.Union["AllowedMentions", dict]] = None,
+        files: typing.Optional[
+            typing.Union["UPLOADABLE_TYPE", typing.Iterable["UPLOADABLE_TYPE"]]
+        ] = None,
+        file: typing.Optional["UPLOADABLE_TYPE"] = None,
+        tts: bool = False,
     ) -> "interactions.Message":
         message_payload = process_message_payload(
             content=content,
@@ -214,18 +241,29 @@ class FakeSlashContext(SlashContext):
             tts=tts,
         )
 
-        self._fake_cache[to_snowflake(message) if message != "@original" else message].update_from_dict(message_payload)
+        self._fake_cache[
+            to_snowflake(message) if message != "@original" else message
+        ].update_from_dict(message_payload)
         message_data = deepcopy(
-            self._fake_cache[to_snowflake(message) if message != "@original" else message].to_dict())
-        message_data["id"] = to_snowflake(message) if message != "@original" else message
+            self._fake_cache[
+                to_snowflake(message) if message != "@original" else message
+            ].to_dict()
+        )
+        message_data["id"] = (
+            to_snowflake(message) if message != "@original" else message
+        )
 
         if "embeds" in message_data:
-            message_data["embeds"] = [embed.to_dict() if isinstance(embed, Embed) else embed for embed in
-                                      message_data["embeds"]]
+            message_data["embeds"] = [
+                embed.to_dict() if isinstance(embed, Embed) else embed
+                for embed in message_data["embeds"]
+            ]
 
         if message_data:
             self.actions += ({"action": "edit", "message": message_data},)
-            self._fake_cache[message_data["id"]] = Message.from_dict(deepcopy(message_data), self.client)
+            self._fake_cache[message_data["id"]] = Message.from_dict(
+                deepcopy(message_data), self.client
+            )
             return Message.from_dict(deepcopy(message_data), self.client)
 
 
@@ -247,17 +285,20 @@ class FakeHttp(HTTPClient):
         super().__init__(*args, **kwargs)
 
     async def delete_message(
-            self, channel_id: "Snowflake_Type", message_id: "Snowflake_Type", reason: str | None = None
+        self,
+        channel_id: "Snowflake_Type",
+        message_id: "Snowflake_Type",
+        reason: str | None = None,
     ) -> None:
         self.actions += ({"action": "delete", "message_id": to_snowflake(message_id)},)
         del self._fake_cache[to_snowflake(message_id)]
 
     async def edit_message(
-            self,
-            payload: dict,
-            channel_id: "Snowflake_Type",
-            message_id: "Snowflake_Type",
-            files: list["UPLOADABLE_TYPE"] | None = None,
+        self,
+        payload: dict,
+        channel_id: "Snowflake_Type",
+        message_id: "Snowflake_Type",
+        files: list["UPLOADABLE_TYPE"] | None = None,
     ) -> "Message":
         message = self._fake_cache[to_snowflake(message_id)]
         message.update_from_dict(payload)
@@ -265,12 +306,22 @@ class FakeHttp(HTTPClient):
         self.actions += ({"action": "edit", "message": message.to_dict()},)
         return message
 
-    async def create_reaction(self, channel_id: "Snowflake_Type", message_id: "Snowflake_Type", emoji: str) -> None:
+    async def create_reaction(
+        self, channel_id: "Snowflake_Type", message_id: "Snowflake_Type", emoji: str
+    ) -> None:
         self._fake_cache[to_snowflake(message_id)].reactions.append(emoji)
-        self.actions += ({"action": "create_reaction", "message_id": to_snowflake(message_id), "emoji": emoji},)
+        self.actions += (
+            {
+                "action": "create_reaction",
+                "message_id": to_snowflake(message_id),
+                "emoji": emoji,
+            },
+        )
 
 
-async def call_slash(func: typing.Callable, *args, _client: FakeClient = None, **kwargs):
+async def call_slash(
+    func: typing.Callable, *args, _client: FakeClient = None, **kwargs
+):
     """
     Call a slash command function with the given arguments.
 
