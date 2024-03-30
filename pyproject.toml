@@ -7,7 +7,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "interactions_unittest"
-version = "1.0.2"
+version = "1.0.3"
 authors = [
     { name="Pilot1782", email="34791564a@gmail.com" },
 ]

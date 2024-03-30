@@ -14,7 +14,7 @@ from interactions import (
     Snowflake_Type,
     models,
     process_message_payload,
-    to_snowflake,
+    to_snowflake, BaseComponent, Sticker, AllowedMentions, MessageReference, UPLOADABLE_TYPE,
 )
 from interactions.api.http.http_client import HTTPClient
 
@@ -31,6 +31,14 @@ def random_snowflake() -> int:
 
 
 class FakeSlashContext(SlashContext):
+    """
+    A fake SlashContext class for testing
+
+    This class is used to simulate a SlashContext object for testing purposes.
+    It will avoid calling the Discord API and instead store the actions that would be taken in a list.
+    It is meant to be used with the other fake classes in this module.
+    """
+
     __slots__ = ("actions", "_fake_cache", "http")
 
     def __init__(self, client: "interactions.Client"):
@@ -103,8 +111,10 @@ class FakeSlashContext(SlashContext):
             stickers: IDs of up to 3 stickers in the server to send in the message.
             allowed_mentions: Allowed mentions for the message.
             reply_to: Message to reference, must be from the same channel.
-            files: Files to send, the path, bytes or File() instance, defaults to None. You may have up to 10 files.
-            file: Files to send, the path, bytes or File() instance, defaults to None. You may have up to 10 files.
+            files: Files to send, the path, bytes or File() instance,
+                   defaults to None. You may have up to 10 files.
+            file: Files to send, the path, bytes or File() instance,
+                  defaults to None. You may have up to 10 files.
             tts: Should this message use Text To Speech.
             suppress_embeds: Should embeds be suppressed on this send
             silent: Should this message be sent without triggering a notification.
@@ -147,7 +157,10 @@ class FakeSlashContext(SlashContext):
             or isinstance(files, interactions.models.discord.message.Attachment)
         ):
             raise ValueError(
-                "Attachments are not files. Attachments only contain metadata about the file, not the file itself - to send an attachment, you need to download it first. Check Attachment.url"
+                "Attachments are not files. "
+                "Attachments only contain metadata about the file, "
+                "not the file itself - to send an attachment, "
+                "you need to download it first. Check Attachment.url"
             )
 
         message_payload = models.discord.message.process_message_payload(
@@ -185,7 +198,7 @@ class FakeSlashContext(SlashContext):
         Delete a message sent in response to this interaction.
 
         Args:
-            message: The message to delete. Defaults to @original which represents the initial response message.
+            message: The message id to delete.
         """
         self.actions += (
             {
@@ -263,6 +276,14 @@ class FakeSlashContext(SlashContext):
 
 
 class FakeClient(Client):
+    """
+    A fake Client class for testing
+
+    This class is used to simulate a Client object for testing purposes.
+    It will override the HTTPClient object with a FakeHttp object
+    to bypass the discord api and store the actions that would be taken in a list.
+    """
+
     __slots__ = ("_fake_cache", "actions")
 
     def __init__(self, *args, **kwargs):
@@ -273,6 +294,12 @@ class FakeClient(Client):
 
 
 class FakeHttp(HTTPClient):
+    """
+    A fake HTTPClient class for testing
+
+    This class will simulate any calls made to the discord api.
+    """
+
     def __init__(self, *args, client: FakeClient, **kwargs):
         self.client = client
         self.actions = self.client.actions
@@ -341,4 +368,9 @@ async def call_slash(
 
 
 def get_client() -> FakeClient:
+    """Returns a FakeClient instance.
+
+    :return: A FakeClient instance.
+    """
+
     return FakeClient()
