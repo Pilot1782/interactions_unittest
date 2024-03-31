@@ -10,6 +10,16 @@ from interactions import (
     Attachment,
     BaseComponent,
     Client,
+    Permissions,
+    SlashContext,
+    Client,
+    GuildChannel,
+    GuildCategory,
+    ChannelType,
+    Role,
+    Member,
+    Guild,
+    Message,
     Embed,
     Message,
     MessageFlags,
@@ -20,6 +30,12 @@ from interactions import (
     models,
     process_message_payload,
     to_snowflake,
+    UPLOADABLE_TYPE,
+    MessageFlags,
+    models,
+    to_snowflake,
+    Attachment,
+    process_message_payload,
 )
 from interactions.api.http.http_client import HTTPClient
 
@@ -45,6 +61,38 @@ class FakeSlashContext(SlashContext):
     """
 
     __slots__ = ("actions", "_fake_cache", "http")
+    fake_guild: typing.Optional["FakeGuild"] = None
+
+    @property
+    def guild(self) -> typing.Optional["FakeGuild"]:
+        return self.fake_guild
+
+    @guild.setter
+    def guild(self, value: typing.Optional["FakeGuild"]):
+        self.fake_guild = value
+        self.guild_id = value.id
+
+    fake_channel: typing.Optional["FakeChannel"] = None
+
+    @property
+    def channel(self) -> typing.Optional["FakeChannel"]:
+        return self.fake_channel
+
+    @channel.setter
+    def channel(self, value: typing.Optional["FakeChannel"]):
+        self.fake_channel = value
+        self.channel_id = value.id
+
+    fake_author: typing.Optional["FakeMember"] = None
+
+    @property
+    def author(self) -> typing.Optional["FakeMember"]:
+        return self.fake_author
+
+    @author.setter
+    def author(self, value: typing.Optional["FakeMember"]):
+        self.fake_author = value
+        self.author_id = value.id
 
     def __init__(self, client: "interactions.Client"):
         self.actions = client.actions
@@ -208,9 +256,9 @@ class FakeSlashContext(SlashContext):
         self.actions += (
             {
                 "action": "delete",
-                "message_id": (
-                    to_snowflake(message) if message != "@original" else message
-                ),
+                "message_id": to_snowflake(message)
+                if message != "@original"
+                else message,
             },
         )
         del self._fake_cache[
@@ -278,6 +326,110 @@ class FakeSlashContext(SlashContext):
                 deepcopy(message_data), self.client
             )
             return Message.from_dict(deepcopy(message_data), self.client)
+
+
+class FakeGuild(Guild):
+    fake_channel: typing.Optional["FakeChannel"] = []
+    fake_roles: typing.Optional["FakeRole"] = []
+    fake_members: typing.Optional["FakeMember"] = []
+
+    @property
+    def channels(self) -> typing.List["GuildChannel"]:
+        return self.fake_channel
+
+    @property
+    def roles(self) -> typing.List["Role"]:
+        return self.fake_roles
+
+    @property
+    def members(self) -> typing.List["Member"]:
+        return self.fake_members
+
+    def __init__(
+        self,
+        channel_names: dict[str, list[str]],
+        *args,
+        role_names: list[str] = None,
+        member_names: dict[str, list[str]] = None,
+        **kwargs,
+    ):
+        client = get_client()
+        super().__init__(
+            client=client,
+            id=random_snowflake(),
+            name="VirtualTest",
+            preferred_locale="english_us",
+            owner_id=random_snowflake(),
+            *args,
+            **kwargs,
+        )
+        for channel, sub_channels in channel_names.items():
+            channel_id = random_snowflake()
+            if not sub_channels:
+                self.channels.append(
+                    FakeChannel(client=client, name=channel, id=channel_id)
+                )
+            else:
+                category = FakeCategory(client=client, name=channel, id=channel_id)
+                self.channels.append(category)
+                for sub_channel_name in sub_channels:
+                    sub_channel = FakeChannel(
+                        client=client,
+                        name=sub_channel_name,
+                        id=random_snowflake(),
+                        parent_id=category.id,
+                    )
+                    self.channels.append(sub_channel)
+                    category.channels.append(sub_channel)
+        self.roles.extend(
+            FakeRole(
+                name=role,
+                client=client,
+                color="#ffffff",
+                position=order,
+                guild_id=self.id,
+                permissions=Permissions.ALL,
+                id=random_snowflake(),
+            )
+            for order, role in enumerate(role_names) or []
+        )
+        self.members.extend(
+            FakeMember(
+                nick=member,
+                id=random_snowflake(),
+                fake_roles=[role for role in self.roles if role.name in role_names],
+                guild_id=self.id,
+                client=client,
+            )
+            for member, role_names in member_names.items() or []
+        )
+
+
+class FakeRole(Role):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+
+class FakeMember(Member):
+    fake_roles: typing.Optional["FakeRole"] = []
+
+    @property
+    def roles(self) -> typing.List["Role"]:
+        return self.fake_roles
+
+    def __init__(self, *args, **kwargs):
+        self.fake_roles = kwargs.pop("fake_roles", [])
+        super().__init__(*args, **kwargs)
+
+
+class FakeCategory(GuildCategory):
+    def __init__(self, *args, **kwargs):
+        super().__init__(type=ChannelType.GUILD_CATEGORY, *args, **kwargs)
+
+
+class FakeChannel(GuildChannel):
+    def __init__(self, *args, **kwargs):
+        super().__init__(type=ChannelType.GUILD_TEXT, *args, **kwargs)
 
 
 class FakeClient(Client):
@@ -364,8 +516,14 @@ async def call_slash(
     client = FakeClient() or _client
     client.add_interaction(func)
     ctx = FakeSlashContext(client)
+    for key, value in kwargs.items():
+        if key.startswith("test_ctx_"):
+            setattr(ctx,key.split("test_ctx_", 1)[1], value)
+
     ctx.args = args
-    ctx.kwargs = kwargs
+    ctx.kwargs = {
+        key: value for key, value in kwargs.items() if not key.startswith("text_ctx")
+    }
 
     await func(ctx, *args, **kwargs)
 
