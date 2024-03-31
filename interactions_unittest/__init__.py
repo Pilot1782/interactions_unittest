@@ -5,13 +5,9 @@ from os import urandom
 
 import interactions
 from interactions import (
-    UPLOADABLE_TYPE,
     AllowedMentions,
-    Attachment,
     BaseComponent,
-    Client,
     Permissions,
-    SlashContext,
     Client,
     GuildChannel,
     GuildCategory,
@@ -19,17 +15,12 @@ from interactions import (
     Role,
     Member,
     Guild,
-    Message,
     Embed,
     Message,
-    MessageFlags,
     MessageReference,
     SlashContext,
     Snowflake_Type,
     Sticker,
-    models,
-    process_message_payload,
-    to_snowflake,
     UPLOADABLE_TYPE,
     MessageFlags,
     models,
@@ -518,7 +509,7 @@ async def call_slash(
     ctx = FakeSlashContext(client)
     for key, value in kwargs.items():
         if key.startswith("test_ctx_"):
-            setattr(ctx,key.split("test_ctx_", 1)[1], value)
+            setattr(ctx, key.split("test_ctx_", 1)[1], value)
 
     ctx.args = args
     ctx.kwargs = {
