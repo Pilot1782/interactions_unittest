@@ -7,7 +7,7 @@ from commands import (
     list_role_slash,
     list_member_slash,
 )
-from interactions_unittest import call_slash, get_client, FakeGuild
+from interactions_unittest import ActionType, call_slash, get_client, FakeGuild
 
 
 class TestCommands(unittest.IsolatedAsyncioTestCase):
@@ -15,38 +15,46 @@ class TestCommands(unittest.IsolatedAsyncioTestCase):
         actions = await call_slash(test_slash, option="test")
 
         self.assertTrue(len(actions) == 4)
-        self.assertTrue(actions[0]["action"] == "defer", f"Action 0: {actions[0]}")
-        self.assertTrue(actions[1]["action"] == "send", f"Action 1: {actions[1]}")
-        self.assertTrue(actions[2]["action"] == "edit", f"Action 2: {actions[2]}")
-        self.assertTrue(actions[3]["action"] == "delete", f"Action 3: {actions[3]}")
+        self.assertTrue(actions[0].action_type == ActionType.DEFER, f"Action 0: {actions[0]}")
+        self.assertTrue(actions[1].action_type == ActionType.SEND, f"Action 1: {actions[1]}")
+        self.assertTrue(actions[2].action_type == ActionType.EDIT, f"Action 2: {actions[2]}")
+        self.assertTrue(actions[3].action_type == ActionType.DELETE, f"Action 3: {actions[3]}")
 
     async def test_list_channel_slash(self):
+        client = get_client()
         fake_guild = FakeGuild(
-            channel_names={"welcome": [], "smalltalk": [], "general": []}
+            client=client,
+            channel_names={"welcome": [], "smalltalk": [], "general": []},
+            role_names=[],
+            member_names={},
         )
 
         self.assertIsNotNone(fake_guild, "FakeGuild is None")
         actions = await call_slash(
             list_channel_slash,
+            _client=client,
             test_ctx_guild=fake_guild,
             test_ctx_channel=fake_guild.channels[0],
         )
 
         self.assertTrue(len(actions) == 2)
-        self.assertTrue(actions[0]["action"] == "defer", f"Action 0: {actions[0]}")
-        self.assertTrue(actions[1]["action"] == "send", f"Action 1: {actions[1]}")
+        self.assertTrue(actions[0].action_type == ActionType.DEFER, f"Action 0: {actions[0]}")
+        self.assertTrue(actions[1].action_type == ActionType.SEND, f"Action 1: {actions[1]}")
         self.assertTrue(
-            "Channels" in actions[1]["message"]["content"], f"Action 1: {actions[1]}"
+            "Channels" in actions[1].message["content"], f"Action 1: {actions[1]}"
         )
         self.assertTrue(
-            len(actions[1]["message"]["content"].split("\n")) == 4,
-            f'Action 1: {actions[1]["message"]["content"]}',
+            len(actions[1].message["content"].split("\n")) == 4,
+            f'Action 1: {actions[1].message["content"]}',
         )
 
     async def test_list_role_slash(self):
+        client = get_client()
         fake_guild = FakeGuild(
+            client=client,
             channel_names={"welcome": [], "smalltalk": [], "general": []},
             role_names=["admin", "mod", "user"],
+            member_names={},
         )
 
         self.assertIsNotNone(fake_guild, "FakeGuild is None")
@@ -57,18 +65,18 @@ class TestCommands(unittest.IsolatedAsyncioTestCase):
         )
 
         self.assertTrue(len(actions) == 2)
-        self.assertTrue(actions[0]["action"] == "defer", f"Action 0: {actions[0]}")
-        self.assertTrue(actions[1]["action"] == "send", f"Action 1: {actions[1]}")
+        self.assertTrue(actions[0].action_type == ActionType.DEFER, f"Action 0: {actions[0]}")
+        self.assertTrue(actions[1].action_type == ActionType.SEND, f"Action 1: {actions[1]}")
+        self.assertTrue("Roles" in actions[1].message["content"], f"Action 1: {actions[1]}")
         self.assertTrue(
-            "Roles" in actions[1]["message"]["content"], f"Action 1: {actions[1]}"
-        )
-        self.assertTrue(
-            len(actions[1]["message"]["content"].split("\n")) == 4,
-            f'Action 1: {actions[1]["message"]["content"]}',
+            len(actions[1].message["content"].split("\n")) == 4,
+            f'Action 1: {actions[1].message["content"]}',
         )
 
     async def test_list_member_slash(self):
+        client = get_client()
         fake_guild = FakeGuild(
+            client=client,
             channel_names={"welcome": [], "smalltalk": [], "general": []},
             role_names=["admin", "mod", "user"],
             member_names={
@@ -86,14 +94,14 @@ class TestCommands(unittest.IsolatedAsyncioTestCase):
         )
 
         self.assertTrue(len(actions) == 2)
-        self.assertTrue(actions[0]["action"] == "defer", f"Action 0: {actions[0]}")
-        self.assertTrue(actions[1]["action"] == "send", f"Action 1: {actions[1]}")
+        self.assertTrue(actions[0].action_type == ActionType.DEFER, f"Action 0: {actions[0]}")
+        self.assertTrue(actions[1].action_type == ActionType.SEND, f"Action 1: {actions[1]}")
         self.assertTrue(
-            "Members" in actions[1]["message"]["content"], f"Action 1: {actions[1]}"
+            "Members" in actions[1].message["content"], f"Action 1: {actions[1]}"
         )
         self.assertTrue(
-            len(actions[1]["message"]["content"].split("\n")) == 4,
-            f'Action 1: {actions[1]["message"]["content"]}',
+            len(actions[1].message["content"].split("\n")) == 4,
+            f'Action 1: {actions[1].message["content"]}',
         )
 
     async def test_extension(self):
@@ -103,6 +111,6 @@ class TestCommands(unittest.IsolatedAsyncioTestCase):
         actions = await call_slash(MyExtension.ping_slash, _client=bot, option="test")
 
         self.assertTrue(len(actions) == 3)
-        self.assertTrue(actions[0]["action"] == "defer", f"Action 0: {actions[0]}")
-        self.assertTrue(actions[1]["action"] == "send", f"Action 1: {actions[1]}")
-        self.assertTrue(actions[2]["action"] == "edit", f"Action 2: {actions[2]}")
+        self.assertTrue(actions[0].action_type == ActionType.DEFER, f"Action 0: {actions[0]}")
+        self.assertTrue(actions[1].action_type == ActionType.SEND, f"Action 1: {actions[1]}")
+        self.assertTrue(actions[2].action_type == ActionType.EDIT, f"Action 2: {actions[2]}")

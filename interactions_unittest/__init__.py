@@ -1,7 +1,9 @@
 import datetime
+import time
 import typing
 from copy import deepcopy
 from os import urandom
+from enum import Enum
 
 import interactions
 from interactions import (
@@ -18,6 +20,7 @@ from interactions import (
     Embed,
     Message,
     MessageReference,
+    SlashCommandChoice,
     SlashContext,
     Snowflake_Type,
     Sticker,
@@ -30,6 +33,83 @@ from interactions import (
 )
 from interactions.api.http.http_client import HTTPClient
 
+class ActionType(str, Enum):
+    """
+    An enumeration of the different action types.
+    """
+
+    DEFER = "defer"
+    SEND = "send"
+    DELETE = "delete"
+    EDIT = "edit"
+    CREATE_REACTION = "create_reaction"
+    SEND_MODAL = "send_modal"
+    SEND_CHOICES = "send_choices"
+
+class BaseAction:
+    action_type: ActionType
+    creation_time: float
+
+    def __init__(self):
+        self.creation_time = time.time_ns()
+
+class DeferAction(BaseAction):
+    action_type = ActionType.DEFER
+    ephemeral: bool
+
+    def __init__(self, ephemeral: bool):
+        super().__init__()
+        self.ephemeral = ephemeral
+
+class SendAction(BaseAction):
+    action_type = ActionType.SEND
+    message: dict
+
+    def __init__(self, message: dict):
+        super().__init__()
+        self.message = message
+
+class DeleteAction(BaseAction):
+    action_type = ActionType.DELETE
+    message_id: int
+
+    def __init__(self, message_id: int):
+        super().__init__()
+        self.message_id = message_id
+
+class EditAction(BaseAction):
+    action_type = ActionType.EDIT
+    message: dict
+
+    def __init__(self, message: dict):
+        super().__init__()
+        self.message = message
+
+class CreateReactionAction(BaseAction):
+    action_type = ActionType.CREATE_REACTION
+    message_id: int
+    emoji: str
+
+    def __init__(self, message_id: int, emoji: str):
+        super().__init__()
+        self.message_id = message_id
+        self.emoji = emoji
+
+class SendModalAction(BaseAction):
+    action_type = ActionType.SEND_MODAL
+    modal: dict
+
+    def __init__(self, modal: dict):
+        super().__init__()
+        self.modal = modal
+
+class SendChoicesAction(BaseAction):
+    action_type = ActionType.SEND_CHOICES
+    choices: list[dict]
+
+    def __init__(self, choices: list[dict]):
+        super().__init__()
+        self.choices = choices
 
 def random_snowflake() -> int:
     timestamp = int(
@@ -52,6 +132,7 @@ class FakeSlashContext(SlashContext):
     """
 
     __slots__ = ("actions", "_fake_cache", "http")
+    actions: tuple[BaseAction, ...]
     fake_guild: typing.Optional["FakeGuild"] = None
 
     @property
@@ -100,7 +181,7 @@ class FakeSlashContext(SlashContext):
         """
         self.deferred = True
         self.ephemeral = ephemeral
-        self.actions += ({"action": "defer", "ephemeral": ephemeral},)
+        self.actions += (DeferAction(ephemeral=ephemeral),)
 
     async def send(
         self,
@@ -229,11 +310,12 @@ class FakeSlashContext(SlashContext):
             ]
 
         if message_data:
-            self.actions += ({"action": "send", "message": message_data},)
+            self.actions += (SendAction(message=message_data),)
             message = Message.from_dict(deepcopy(message_data), self.client)
             self._fake_cache[message.id] = message
-
             return message
+        else:
+            raise ValueError("Cannot send an empty message")
 
     respond = send
 
@@ -244,14 +326,7 @@ class FakeSlashContext(SlashContext):
         Args:
             message: The message id to delete.
         """
-        self.actions += (
-            {
-                "action": "delete",
-                "message_id": to_snowflake(message)
-                if message != "@original"
-                else message,
-            },
-        )
+        self.actions += (DeleteAction(message_id=to_snowflake(message) if message != "@original" else message),)
         del self._fake_cache[
             to_snowflake(message) if message != "@original" else message
         ]
@@ -312,17 +387,91 @@ class FakeSlashContext(SlashContext):
             ]
 
         if message_data:
-            self.actions += ({"action": "edit", "message": message_data},)
+            self.actions += (EditAction(message=message_data),)
             self._fake_cache[message_data["id"]] = Message.from_dict(
                 deepcopy(message_data), self.client
             )
             return Message.from_dict(deepcopy(message_data), self.client)
 
+    async def send_modal(self, modal: interactions.Modal) -> dict | interactions.Modal:
+        if self.responded:
+            raise RuntimeError("Cannot send modal after responding")
+        payload = modal if isinstance(modal, dict) else modal.to_dict()
+
+        self.actions += (SendModalAction(modal=payload),)
+        return modal
+
+class FakeAutoCompleteContext(FakeSlashContext):
+    fake_input_text: str
+
+    @property
+    def input_text(self) -> str:
+        return self.fake_input_text
+    
+    def __init__(self, client: "interactions.Client", input_text: str):
+        super().__init__(client)
+        self.fake_input_text = input_text
+
+    async def send(
+        self, choices: typing.Iterable[str | int | float | dict[str, int | float | str] | SlashCommandChoice]
+    ) -> None:
+        """
+        Send your autocomplete choices to discord. Choices must be either a list of strings, or a dictionary following the following format:
+
+        ```json
+            {
+              "name": str,
+              "value": str
+            }
+        ```
+        Where name is the text visible in Discord, and value is the data sent back to your client when that choice is
+        chosen.
+
+        Args:
+            choices: 25 choices the user can pick
+        """
+        if len(choices) > 25:
+            raise ValueError("You can only send 25 choices at a time")
+        processed_choices = []
+        for choice in choices:
+            if isinstance(choice, dict):
+                name = choice["name"]
+                value = choice["value"]
+            elif isinstance(choice, SlashCommandChoice):
+                name = choice.name.get_locale(self.locale)
+                value = choice.value
+            else:
+                name = str(choice)
+                value = choice
+
+            processed_choices.append({"name": name, "value": value})
+        print('#'*25)
+        print(processed_choices)
+        print(choices)
+        print('#'*25)
+        self.actions += (SendChoicesAction(choices=deepcopy(processed_choices)),)
+
+class FakeComponentContext(FakeSlashContext):
+    fake_custom_id: str
+    fake_message: "Message"
+
+    @property
+    def custom_id(self) -> str:
+        return self.fake_custom_id
+
+    @property
+    def message(self) -> "Message":
+        return self.fake_message
+
+    def __init__(self, client: "interactions.Client", custom_id: str, message: "Message"=None):
+        super().__init__(client)
+        self.fake_custom_id = custom_id
+        self.fake_message = message
 
 class FakeGuild(Guild):
-    fake_channel: typing.Optional["FakeChannel"] = []
-    fake_roles: typing.Optional["FakeRole"] = []
-    fake_members: typing.Optional["FakeMember"] = []
+    fake_channel: typing.Optional["FakeChannel"]
+    fake_roles: typing.Optional["FakeRole"]
+    fake_members: typing.Optional["FakeMember"]
 
     @property
     def channels(self) -> typing.List["GuildChannel"]:
@@ -339,12 +488,12 @@ class FakeGuild(Guild):
     def __init__(
         self,
         channel_names: dict[str, list[str]],
+        client: "FakeClient",
         *args,
         role_names: list[str] = None,
         member_names: dict[str, list[str]] = None,
         **kwargs,
     ):
-        client = get_client()
         super().__init__(
             client=client,
             id=random_snowflake(),
@@ -354,6 +503,9 @@ class FakeGuild(Guild):
             *args,
             **kwargs,
         )
+        self.fake_channel = []
+        self.fake_roles = []
+        self.fake_members = []
         for channel, sub_channels in channel_names.items():
             channel_id = random_snowflake()
             if not sub_channels:
@@ -402,7 +554,7 @@ class FakeRole(Role):
 
 
 class FakeMember(Member):
-    fake_roles: typing.Optional["FakeRole"] = []
+    fake_roles: list["FakeRole"] = []
 
     @property
     def roles(self) -> typing.List["Role"]:
@@ -419,6 +571,14 @@ class FakeCategory(GuildCategory):
 
 
 class FakeChannel(GuildChannel):
+
+    async def delete_message(self, message: "Snowflake_Type") -> None:
+        self.client.http.delete_message(self.id, message.id)
+        self.client.actions += (DeleteAction(message_id=message.id),)
+
+    def get_message(self, message_id: "Snowflake_Type") -> "Message":
+        return self.client._fake_cache[to_snowflake(message_id)]
+
     def __init__(self, *args, **kwargs):
         super().__init__(type=ChannelType.GUILD_TEXT, *args, **kwargs)
 
@@ -433,12 +593,18 @@ class FakeClient(Client):
     """
 
     __slots__ = ("_fake_cache", "actions")
+    _fake_cache: dict[int, "Message"]
+    actions: tuple[BaseAction, ...]
 
     def __init__(self, *args, **kwargs):
         self._fake_cache = {}
         self.actions = ()
         super().__init__(*args, **kwargs)
         self.http = FakeHttp(client=self)
+
+    def __del__(self):
+        self._fake_cache.clear()
+        del self._fake_cache
 
 
 class FakeHttp(HTTPClient):
@@ -460,7 +626,7 @@ class FakeHttp(HTTPClient):
         message_id: "Snowflake_Type",
         reason: str | None = None,
     ) -> None:
-        self.actions += ({"action": "delete", "message_id": to_snowflake(message_id)},)
+        self.actions += (DeleteAction(message_id=to_snowflake(message_id)),)
         del self._fake_cache[to_snowflake(message_id)]
 
     async def edit_message(
@@ -473,20 +639,14 @@ class FakeHttp(HTTPClient):
         message = self._fake_cache[to_snowflake(message_id)]
         message.update_from_dict(payload)
         self._fake_cache[to_snowflake(message_id)] = message
-        self.actions += ({"action": "edit", "message": message.to_dict()},)
+        self.actions += (EditAction(message=message.to_dict()),)
         return message
 
     async def create_reaction(
         self, channel_id: "Snowflake_Type", message_id: "Snowflake_Type", emoji: str
     ) -> None:
         self._fake_cache[to_snowflake(message_id)].reactions.append(emoji)
-        self.actions += (
-            {
-                "action": "create_reaction",
-                "message_id": to_snowflake(message_id),
-                "emoji": emoji,
-            },
-        )
+        self.actions += (CreateReactionAction(message_id=to_snowflake(message_id), emoji=emoji),)
 
 
 async def call_slash(
@@ -504,8 +664,12 @@ async def call_slash(
 
     # default_kwargs
 
-    client = FakeClient() or _client
-    client.add_interaction(func)
+    client = _client or FakeClient()
+    if hasattr(func, "scopes") and all(
+        func.resolved_name not in client.interactions_by_scope.get(scope,{})
+        for scope in func.scopes
+    ):
+        client.add_interaction(func)
     ctx = FakeSlashContext(client)
     for key, value in kwargs.items():
         if key.startswith("test_ctx_"):
@@ -513,12 +677,87 @@ async def call_slash(
 
     ctx.args = args
     ctx.kwargs = {
-        key: value for key, value in kwargs.items() if not key.startswith("text_ctx")
+        key: value for key, value in kwargs.items() if not key.startswith("test_ctx")
     }
-
+    start_time = time.time()
     await func(ctx, *args, **kwargs)
 
-    return deepcopy(ctx.actions)
+
+    return sorted(
+        [action for action in list(ctx.actions+client.actions) if action.creation_time >= start_time],
+        key=lambda x: x.creation_time)
+
+async def call_autocomplete(
+    func: typing.Callable, *args,input_text:str, _client: FakeClient = None,  **kwargs
+):
+    """
+    Call an autocomplete function with the given arguments.
+    """
+    client = _client or FakeClient()
+
+    ctx = FakeAutoCompleteContext(client, input_text)
+    ctx.args = args
+    for key, value in kwargs.items():
+        if key.startswith("test_ctx_"):
+            setattr(ctx, key.split("test_ctx_", 1)[1], value)
+
+    ctx.args = args
+    ctx.kwargs = {
+        key: value for key, value in kwargs.items() if not key.startswith("test_ctx")
+    }
+    kwargs = {
+        key: value for key, value in kwargs.items() if not key.startswith("test_ctx")
+    }
+    start_time = time.time()
+    await func(client,ctx, *args, **kwargs)
+
+
+    return sorted(
+        [action for action in list(ctx.actions+client.actions) if action.creation_time >= start_time],
+        key=lambda x: x.creation_time)
+
+async def call_component(
+    func: typing.Callable, *args, _client: FakeClient = None, **kwargs
+):
+    """
+    Call a component function with the given arguments.
+
+    :param func: The function to call.
+    :param _client: A FakeClient instance to use.
+    :param args: The positional arguments to pass to the function.
+    :param kwargs: The keyword arguments to pass to the function.
+    :return:
+    """
+
+    # default_kwargs
+
+    client = _client or FakeClient()
+    if all(
+        func.resolved_name not in client.interactions_by_scope.get(scope,{})
+        for scope in func.scopes
+    ):
+        client.add_interaction(func)
+
+    source_message = kwargs.pop("test_ctx_message")
+    source_message = Message.from_dict(deepcopy(source_message), client) if isinstance(source_message, dict) else source_message
+    ctx = FakeComponentContext(client, kwargs.pop("test_ctx_custom_id"), source_message)
+
+    ctx.args = args
+    for key, value in kwargs.items():
+        if key.startswith("test_ctx_"):
+            setattr(ctx, key.split("test_ctx_", 1)[1], value)
+
+    ctx.args = args
+    ctx.kwargs = {
+        key: value for key, value in kwargs.items() if not key.startswith("test_ctx")
+    }
+    start_time = time.time()
+    await func(ctx, *args, **kwargs)
+
+
+    return sorted(
+        [action for action in list(ctx.actions+client.actions) if action.creation_time >= start_time],
+        key=lambda x: x.creation_time)
 
 
 def get_client() -> FakeClient:
@@ -526,5 +765,4 @@ def get_client() -> FakeClient:
 
     :return: A FakeClient instance.
     """
-
     return FakeClient()
