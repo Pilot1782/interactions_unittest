@@ -2,36 +2,37 @@ import datetime
 import time
 import typing
 from copy import deepcopy
-from os import urandom
 from enum import Enum
+from os import urandom
 
 import interactions
 from interactions import (
+    UPLOADABLE_TYPE,
     AllowedMentions,
+    Attachment,
     BaseComponent,
-    Permissions,
-    Client,
-    GuildChannel,
-    GuildCategory,
     ChannelType,
-    Role,
-    Member,
-    Guild,
+    Client,
     Embed,
+    Guild,
+    GuildCategory,
+    GuildChannel,
+    Member,
     Message,
+    MessageFlags,
     MessageReference,
+    Permissions,
+    Role,
     SlashCommandChoice,
     SlashContext,
     Snowflake_Type,
     Sticker,
-    UPLOADABLE_TYPE,
-    MessageFlags,
     models,
-    to_snowflake,
-    Attachment,
     process_message_payload,
+    to_snowflake,
 )
 from interactions.api.http.http_client import HTTPClient
+
 
 class ActionType(str, Enum):
     """
@@ -46,12 +47,14 @@ class ActionType(str, Enum):
     SEND_MODAL = "send_modal"
     SEND_CHOICES = "send_choices"
 
+
 class BaseAction:
     action_type: ActionType
     creation_time: float
 
     def __init__(self):
         self.creation_time = time.time_ns()
+
 
 class DeferAction(BaseAction):
     action_type = ActionType.DEFER
@@ -61,6 +64,7 @@ class DeferAction(BaseAction):
         super().__init__()
         self.ephemeral = ephemeral
 
+
 class SendAction(BaseAction):
     action_type = ActionType.SEND
     message: dict
@@ -68,6 +72,7 @@ class SendAction(BaseAction):
     def __init__(self, message: dict):
         super().__init__()
         self.message = message
+
 
 class DeleteAction(BaseAction):
     action_type = ActionType.DELETE
@@ -77,6 +82,7 @@ class DeleteAction(BaseAction):
         super().__init__()
         self.message_id = message_id
 
+
 class EditAction(BaseAction):
     action_type = ActionType.EDIT
     message: dict
@@ -84,6 +90,7 @@ class EditAction(BaseAction):
     def __init__(self, message: dict):
         super().__init__()
         self.message = message
+
 
 class CreateReactionAction(BaseAction):
     action_type = ActionType.CREATE_REACTION
@@ -95,6 +102,7 @@ class CreateReactionAction(BaseAction):
         self.message_id = message_id
         self.emoji = emoji
 
+
 class SendModalAction(BaseAction):
     action_type = ActionType.SEND_MODAL
     modal: dict
@@ -103,6 +111,7 @@ class SendModalAction(BaseAction):
         super().__init__()
         self.modal = modal
 
+
 class SendChoicesAction(BaseAction):
     action_type = ActionType.SEND_CHOICES
     choices: list[dict]
@@ -110,6 +119,7 @@ class SendChoicesAction(BaseAction):
     def __init__(self, choices: list[dict]):
         super().__init__()
         self.choices = choices
+
 
 def random_snowflake() -> int:
     timestamp = int(
@@ -326,7 +336,11 @@ class FakeSlashContext(SlashContext):
         Args:
             message: The message id to delete.
         """
-        self.actions += (DeleteAction(message_id=to_snowflake(message) if message != "@original" else message),)
+        self.actions += (
+            DeleteAction(
+                message_id=to_snowflake(message) if message != "@original" else message
+            ),
+        )
         del self._fake_cache[
             to_snowflake(message) if message != "@original" else message
         ]
@@ -401,19 +415,23 @@ class FakeSlashContext(SlashContext):
         self.actions += (SendModalAction(modal=payload),)
         return modal
 
+
 class FakeAutoCompleteContext(FakeSlashContext):
     fake_input_text: str
 
     @property
     def input_text(self) -> str:
         return self.fake_input_text
-    
+
     def __init__(self, client: "interactions.Client", input_text: str):
         super().__init__(client)
         self.fake_input_text = input_text
 
     async def send(
-        self, choices: typing.Iterable[str | int | float | dict[str, int | float | str] | SlashCommandChoice]
+        self,
+        choices: typing.Iterable[
+            str | int | float | dict[str, int | float | str] | SlashCommandChoice
+        ],
     ) -> None:
         """
         Send your autocomplete choices to discord. Choices must be either a list of strings, or a dictionary following the following format:
@@ -445,11 +463,12 @@ class FakeAutoCompleteContext(FakeSlashContext):
                 value = choice
 
             processed_choices.append({"name": name, "value": value})
-        print('#'*25)
+        print("#" * 25)
         print(processed_choices)
         print(choices)
-        print('#'*25)
+        print("#" * 25)
         self.actions += (SendChoicesAction(choices=deepcopy(processed_choices)),)
+
 
 class FakeComponentContext(FakeSlashContext):
     fake_custom_id: str
@@ -463,10 +482,13 @@ class FakeComponentContext(FakeSlashContext):
     def message(self) -> "Message":
         return self.fake_message
 
-    def __init__(self, client: "interactions.Client", custom_id: str, message: "Message"=None):
+    def __init__(
+        self, client: "interactions.Client", custom_id: str, message: "Message" = None
+    ):
         super().__init__(client)
         self.fake_custom_id = custom_id
         self.fake_message = message
+
 
 class FakeGuild(Guild):
     fake_channel: typing.Optional["FakeChannel"]
@@ -571,7 +593,6 @@ class FakeCategory(GuildCategory):
 
 
 class FakeChannel(GuildChannel):
-
     async def delete_message(self, message: "Snowflake_Type") -> None:
         self.client.http.delete_message(self.id, message.id)
         self.client.actions += (DeleteAction(message_id=message.id),)
@@ -646,7 +667,9 @@ class FakeHttp(HTTPClient):
         self, channel_id: "Snowflake_Type", message_id: "Snowflake_Type", emoji: str
     ) -> None:
         self._fake_cache[to_snowflake(message_id)].reactions.append(emoji)
-        self.actions += (CreateReactionAction(message_id=to_snowflake(message_id), emoji=emoji),)
+        self.actions += (
+            CreateReactionAction(message_id=to_snowflake(message_id), emoji=emoji),
+        )
 
 
 async def call_slash(
@@ -666,7 +689,7 @@ async def call_slash(
 
     client = _client or FakeClient()
     if hasattr(func, "scopes") and all(
-        func.resolved_name not in client.interactions_by_scope.get(scope,{})
+        func.resolved_name not in client.interactions_by_scope.get(scope, {})
         for scope in func.scopes
     ):
         client.add_interaction(func)
@@ -682,13 +705,18 @@ async def call_slash(
     start_time = time.time()
     await func(ctx, *args, **kwargs)
 
-
     return sorted(
-        [action for action in list(ctx.actions+client.actions) if action.creation_time >= start_time],
-        key=lambda x: x.creation_time)
+        [
+            action
+            for action in list(ctx.actions + client.actions)
+            if action.creation_time >= start_time
+        ],
+        key=lambda x: x.creation_time,
+    )
+
 
 async def call_autocomplete(
-    func: typing.Callable, *args,input_text:str, _client: FakeClient = None,  **kwargs
+    func: typing.Callable, *args, input_text: str, _client: FakeClient = None, **kwargs
 ):
     """
     Call an autocomplete function with the given arguments.
@@ -709,12 +737,17 @@ async def call_autocomplete(
         key: value for key, value in kwargs.items() if not key.startswith("test_ctx")
     }
     start_time = time.time()
-    await func(client,ctx, *args, **kwargs)
-
+    await func(client, ctx, *args, **kwargs)
 
     return sorted(
-        [action for action in list(ctx.actions+client.actions) if action.creation_time >= start_time],
-        key=lambda x: x.creation_time)
+        [
+            action
+            for action in list(ctx.actions + client.actions)
+            if action.creation_time >= start_time
+        ],
+        key=lambda x: x.creation_time,
+    )
+
 
 async def call_component(
     func: typing.Callable, *args, _client: FakeClient = None, **kwargs
@@ -733,13 +766,17 @@ async def call_component(
 
     client = _client or FakeClient()
     if all(
-        func.resolved_name not in client.interactions_by_scope.get(scope,{})
+        func.resolved_name not in client.interactions_by_scope.get(scope, {})
         for scope in func.scopes
     ):
         client.add_interaction(func)
 
     source_message = kwargs.pop("test_ctx_message")
-    source_message = Message.from_dict(deepcopy(source_message), client) if isinstance(source_message, dict) else source_message
+    source_message = (
+        Message.from_dict(deepcopy(source_message), client)
+        if isinstance(source_message, dict)
+        else source_message
+    )
     ctx = FakeComponentContext(client, kwargs.pop("test_ctx_custom_id"), source_message)
 
     ctx.args = args
@@ -754,10 +791,14 @@ async def call_component(
     start_time = time.time()
     await func(ctx, *args, **kwargs)
 
-
     return sorted(
-        [action for action in list(ctx.actions+client.actions) if action.creation_time >= start_time],
-        key=lambda x: x.creation_time)
+        [
+            action
+            for action in list(ctx.actions + client.actions)
+            if action.creation_time >= start_time
+        ],
+        key=lambda x: x.creation_time,
+    )
 
 
 def get_client() -> FakeClient:
