@@ -43,6 +43,7 @@ class TestPing(unittest.IsolatedAsyncioTestCase):
         self.assertTrue(actions[0].message["content"] == "Pong! extra text")
 ```
 """
+
 import time
 import typing
 from copy import deepcopy
@@ -68,7 +69,7 @@ from .fake_contexts import (
     FakeSlashContext,
 )
 
-#dummy usage to suppress flake8 error
+# dummy usage to suppress flake8 error
 _ = ActionType
 _ = BaseAction
 _ = CreateReactionAction
@@ -140,7 +141,8 @@ async def call_autocomplete(
         key=lambda x: x.creation_time,
     )
 
-def organize_kwargs(args:tuple, kwargs:dict[str,typing.Any], ctx:FakeSlashContext):
+
+def organize_kwargs(args: tuple, kwargs: dict[str, typing.Any], ctx: FakeSlashContext):
     """
     Organize the keyword arguments.
 

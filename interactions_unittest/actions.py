@@ -1,10 +1,12 @@
 """
 This module contains the different action classes that can be returned by the interaction functions.
 """
+
 from abc import ABC
 from enum import Enum
 import time
 from typing import Optional
+
 
 class ActionType(str, Enum):
     """An enumeration of the different action types."""
@@ -55,10 +57,15 @@ class DeleteAction(BaseAction):
 
     action_type = ActionType.DELETE
     message_id: int
-    channel_id:Optional[int]
-    reason:Optional[str]
+    channel_id: Optional[int]
+    reason: Optional[str]
 
-    def __init__(self, message_id: int,channel_id:Optional[int] = None,reason:Optional[str] = None):
+    def __init__(
+        self,
+        message_id: int,
+        channel_id: Optional[int] = None,
+        reason: Optional[str] = None,
+    ):
         super().__init__()
         self.message_id = message_id
         self.channel_id = channel_id
@@ -70,9 +77,9 @@ class EditAction(BaseAction):
 
     action_type = ActionType.EDIT
     message: dict
-    channel_id:Optional[int]
+    channel_id: Optional[int]
 
-    def __init__(self, message: dict, channel_id:Optional[int] = None):
+    def __init__(self, message: dict, channel_id: Optional[int] = None):
         super().__init__()
         self.message = message
         self.channel_id = channel_id
@@ -84,9 +91,9 @@ class CreateReactionAction(BaseAction):
     action_type = ActionType.CREATE_REACTION
     message_id: int
     emoji: str
-    channel_id:Optional[int]
+    channel_id: Optional[int]
 
-    def __init__(self, message_id: int, emoji: str ,channel_id:Optional[int] = None):
+    def __init__(self, message_id: int, emoji: str, channel_id: Optional[int] = None):
         super().__init__()
         self.message_id = message_id
         self.emoji = emoji
