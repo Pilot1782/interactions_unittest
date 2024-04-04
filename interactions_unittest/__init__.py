@@ -99,9 +99,6 @@ async def call_slash(
     :param kwargs: The keyword arguments to pass to the function.
     :return:
     """
-
-    # default_kwargs
-
     client = _client or FakeClient()
     if hasattr(func, "scopes") and all(
         func.resolved_name not in client.interactions_by_scope.get(scope, {})
@@ -126,7 +123,7 @@ async def call_slash(
 async def call_autocomplete(
     func: typing.Callable, *args, input_text: str, _client: FakeClient = None, **kwargs
 ):
-    """ Call an autocomplete function with the given arguments. """
+    """Call an autocomplete function with the given arguments."""
     client = _client or FakeClient()
 
     ctx = FakeAutoCompleteContext(client, input_text)
@@ -179,9 +176,6 @@ async def call_component(
     :param kwargs: The keyword arguments to pass to the function.
     :return:
     """
-
-    # default_kwargs
-
     client = _client or FakeClient()
     if all(
         func.resolved_name not in client.interactions_by_scope.get(scope, {})
@@ -211,5 +205,5 @@ async def call_component(
 
 
 def get_client() -> FakeClient:
-    """ Returns a new FakeClient instance. """
+    """Returns a new FakeClient instance."""
     return FakeClient()

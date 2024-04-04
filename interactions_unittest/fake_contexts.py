@@ -1,4 +1,4 @@
-""" Fake context classes for testing purposes. """
+"""Fake context classes for testing purposes."""
 import typing
 from copy import deepcopy
 
@@ -30,7 +30,7 @@ from .actions import (
     SendChoicesAction,
     SendModalAction,
 )
-from .helpers import random_snowflake
+from .helpers import random_snowflake, fake_process_files
 from .fake_models import FakeChannel, FakeGuild, FakeMember
 
 
@@ -46,36 +46,36 @@ class FakeSlashContext(SlashContext):
 
     __slots__ = ("actions", "_fake_cache", "http")
     actions: tuple[BaseAction, ...]
-    fake_guild: typing.Optional["FakeGuild"] = None
+    fake_guild: typing.Optional[FakeGuild] = None
 
     @property
-    def guild(self) -> typing.Optional["FakeGuild"]:
+    def guild(self) -> typing.Optional[FakeGuild]:
         return self.fake_guild
 
     @guild.setter
-    def guild(self, value: typing.Optional["FakeGuild"]):
+    def guild(self, value: typing.Optional[FakeGuild]):
         self.fake_guild = value
         self.guild_id = value.id
 
-    fake_channel: typing.Optional["FakeChannel"] = None
+    fake_channel: typing.Optional[FakeChannel] = None
 
     @property
-    def channel(self) -> typing.Optional["FakeChannel"]:
+    def channel(self) -> typing.Optional[FakeChannel]:
         return self.fake_channel
 
     @channel.setter
-    def channel(self, value: typing.Optional["FakeChannel"]):
+    def channel(self, value: typing.Optional[FakeChannel]):
         self.fake_channel = value
         self.channel_id = value.id
 
-    fake_author: typing.Optional["FakeMember"] = None
+    fake_author: typing.Optional[FakeMember] = None
 
     @property
-    def author(self) -> typing.Optional["FakeMember"]:
+    def author(self) -> typing.Optional[FakeMember]:
         return self.fake_author
 
     @author.setter
-    def author(self, value: typing.Optional["FakeMember"]):
+    def author(self, value: typing.Optional[FakeMember]):
         self.fake_author = value
         self.author_id = value.id
 
@@ -109,22 +109,22 @@ class FakeSlashContext(SlashContext):
         embed: typing.Optional[typing.Union["Embed", dict]] = None,
         components: typing.Optional[
             typing.Union[
-                typing.Iterable[typing.Iterable[typing.Union["BaseComponent", dict]]],
-                typing.Iterable[typing.Union["BaseComponent", dict]],
-                "BaseComponent",
+                typing.Iterable[typing.Iterable[typing.Union[BaseComponent, dict]]],
+                typing.Iterable[typing.Union[BaseComponent, dict]],
+                BaseComponent,
                 dict,
             ]
         ] = None,
         stickers: typing.Optional[
             typing.Union[
-                typing.Iterable[typing.Union["Sticker", "Snowflake_Type"]],
-                "Sticker",
+                typing.Iterable[typing.Union[Sticker, "Snowflake_Type"]],
+                Sticker,
                 "Snowflake_Type",
             ]
         ] = None,
-        allowed_mentions: typing.Optional[typing.Union["AllowedMentions", dict]] = None,
+        allowed_mentions: typing.Optional[typing.Union[AllowedMentions, dict]] = None,
         reply_to: typing.Optional[
-            typing.Union["MessageReference", "Message", dict, "Snowflake_Type"]
+            typing.Union[MessageReference, Message, dict, "Snowflake_Type"]
         ] = None,
         files: typing.Optional[
             typing.Union["UPLOADABLE_TYPE", typing.Iterable["UPLOADABLE_TYPE"]]
@@ -164,7 +164,7 @@ class FakeSlashContext(SlashContext):
             New message object that was sent.
         """
         flags = self.fake_process_flags(suppress_embeds, silent, flags, ephemeral)
-        self.fake_process_files(files, file)
+        fake_process_files(files, file)
 
         if delete_after is not None:
             print("delete_after is not supported in FakeSlashContext.send yet")
@@ -193,36 +193,18 @@ class FakeSlashContext(SlashContext):
             return message
         raise ValueError("Cannot send an empty message")
 
-    def deconstruct_embeds(self, message_data):
-        """ Deconstruct the embeds in the message data. """
+    @staticmethod
+    def deconstruct_embeds(message_data):
+        """Deconstruct the embeds in the message data."""
         if "embeds" in message_data:
             message_data["embeds"] = [
                 embed.to_dict() if isinstance(embed, Embed) else embed
                 for embed in message_data["embeds"]
             ]
 
-    def fake_process_files(self, files, file):
-        """ Process the files (raise exception if any attachment is used). """
-        has_files = bool(files or file)
-        is_attachment = isinstance(file, interactions.models.discord.message.Attachment) or isinstance(
-            files, interactions.models.discord.message.Attachment
-        ) or (
-            isinstance(files, typing.Iterable)
-            and any(
-                isinstance(file, interactions.models.discord.message.Attachment)
-                for file in files
-            )
-        )
-        if has_files and is_attachment:
-            raise ValueError(
-                "Attachments are not files. "
-                "Attachments only contain metadata about the file, "
-                "not the file itself - to send an attachment, "
-                "you need to download it first. Check Attachment.url"
-            )
 
     def fake_process_flags(self, suppress_embeds, silent, flags, ephemeral):
-        """ Construct the flags. """
+        """Construct the flags."""
         flags = MessageFlags(flags or 0)
         if ephemeral or self.ephemeral:
             flags |= MessageFlags.EPHEMERAL
@@ -276,20 +258,22 @@ class FakeSlashContext(SlashContext):
         embed: typing.Optional[typing.Union["Embed", dict]] = None,
         components: typing.Optional[
             typing.Union[
-                typing.Iterable[typing.Iterable[typing.Union["BaseComponent", dict]]],
-                typing.Iterable[typing.Union["BaseComponent", dict]],
-                "BaseComponent",
+                typing.Iterable[typing.Iterable[typing.Union[BaseComponent, dict]]],
+                typing.Iterable[typing.Union[BaseComponent, dict]],
+                BaseComponent,
                 dict,
             ]
         ] = None,
         attachments: typing.Optional[typing.Sequence[Attachment | dict]] = None,
-        allowed_mentions: typing.Optional[typing.Union["AllowedMentions", dict]] = None,
+        allowed_mentions: typing.Optional[typing.Union[AllowedMentions, dict]] = None,
         files: typing.Optional[
             typing.Union["UPLOADABLE_TYPE", typing.Iterable["UPLOADABLE_TYPE"]]
         ] = None,
         file: typing.Optional["UPLOADABLE_TYPE"] = None,
         tts: bool = False,
     ) -> "interactions.Message":
+        """Edit a message sent in response to this interaction."""
+        fake_process_files(files, file)
         message_payload = process_message_payload(
             content=content,
             embeds=embeds or embed,
@@ -325,6 +309,7 @@ class FakeSlashContext(SlashContext):
             return Message.from_dict(deepcopy(message_data), self.client)
 
     async def send_modal(self, modal: interactions.Modal) -> dict | interactions.Modal:
+        """Send a modal to the user."""
         if self.responded:
             raise RuntimeError("Cannot send modal after responding")
         payload = modal if isinstance(modal, dict) else modal.to_dict()
@@ -340,11 +325,12 @@ class FakeAutoCompleteContext(FakeSlashContext):
     For simplicity, this class is a subclass of FakeSlashContext instead of BaseInteractionContext. 
     resulting in argemument rename warning
     """
+
     fake_input_text: str
 
     @property
     def input_text(self) -> str:
-        """ Override the input_text property to return the fake input text. """
+        """Override the input_text property to return the fake input text."""
         return self.fake_input_text
 
     def __init__(self, client: "interactions.Client", input_text: str):
@@ -391,13 +377,14 @@ class FakeAutoCompleteContext(FakeSlashContext):
 
 
 class FakeComponentContext(FakeSlashContext):
-    """ A fake ComponentContext class for testing """
+    """A fake ComponentContext class for testing"""
+
     fake_custom_id: str
     fake_message: "Message"
 
     @property
     def custom_id(self) -> str:
-        """ Override the custom_id property to return the fake custom id. """
+        """Override the custom_id property to return the fake custom id."""
         return self.fake_custom_id
 
     @property

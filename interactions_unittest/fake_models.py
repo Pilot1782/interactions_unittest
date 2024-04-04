@@ -1,4 +1,4 @@
-""" Fake models for testing purposes. """
+"""Fake models for testing purposes."""
 import typing
 from interactions import (
     UPLOADABLE_TYPE,
@@ -16,16 +16,18 @@ from interactions import (
 )
 from interactions.api.http.http_client import HTTPClient
 
+
 from .actions import (
     BaseAction,
     CreateReactionAction,
     DeleteAction,
     EditAction,
 )
-from .helpers import random_snowflake
+from .helpers import random_snowflake, fake_process_files
 
 class FakeGuild(Guild):
-    """ A fake Guild class for testing """
+    """A fake Guild class for testing."""
+
     fake_channel: typing.Optional["FakeChannel"]
     fake_roles: typing.Optional["FakeRole"]
     fake_members: typing.Optional["FakeMember"]
@@ -106,13 +108,15 @@ class FakeGuild(Guild):
 
 
 class FakeRole(Role):
-    """ A fake Role class for testing """
+    """A fake Role class for testing"""
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
 
 class FakeMember(Member):
-    """ A fake Member class for testing """
+    """A fake Member class for testing"""
+
     fake_roles: list["FakeRole"] = []
 
     @property
@@ -125,20 +129,22 @@ class FakeMember(Member):
 
 
 class FakeCategory(GuildCategory):
-    """ A fake Category class for testing """
+    """A fake Category class for testing"""
+
     def __init__(self, *args, **kwargs):
         super().__init__(type=ChannelType.GUILD_CATEGORY, *args, **kwargs)
 
 
 class FakeChannel(GuildChannel):
-    """ A fake Channel class for testing """
+    """A fake Channel class for testing"""
+
     async def delete_message(self, message: "Snowflake_Type") -> None:
-        """ Delete a message from the channel. """
+        """Delete a message from the channel."""
         self.client.http.delete_message(self.id, message.id)
         self.client.actions += (DeleteAction(message_id=message.id),)
 
     def get_message(self, message_id: "Snowflake_Type") -> "Message":
-        """ Get a message from the channel. """
+        """Get a message from the channel."""
         return self.client.fake_get_message(message_id)
 
     def __init__(self, *args, **kwargs):
@@ -159,7 +165,7 @@ class FakeClient(Client):
     actions: tuple[BaseAction, ...]
 
     def fake_get_message(self, message_id: "Snowflake_Type") -> "Message":
-        """ Get a message from the cache. """
+        """Get a message from the cache."""
         return self._fake_cache[to_snowflake(message_id)]
 
     def __init__(self, *args, **kwargs):
@@ -173,7 +179,7 @@ class FakeClient(Client):
         del self._fake_cache
 
     def command(self, *args, **kwargs):
-        # dummy function to suppress abstract method error
+        """dummy function to suppress abstract method error"""
         pass
 
 
@@ -196,7 +202,8 @@ class FakeHttp(HTTPClient):
         message_id: "Snowflake_Type",
         reason: str | None = None,
     ) -> None:
-        self.actions += (DeleteAction(message_id=to_snowflake(message_id)),)
+        """Delete a message from a channel."""
+        self.actions += (DeleteAction(message_id=to_snowflake(message_id),channel_id=int(to_snowflake(channel_id)),reason=reason),)
         del self._fake_cache[to_snowflake(message_id)]
 
     async def edit_message(
@@ -204,18 +211,21 @@ class FakeHttp(HTTPClient):
         payload: dict,
         channel_id: "Snowflake_Type",
         message_id: "Snowflake_Type",
-        files: list["UPLOADABLE_TYPE"] | None = None,
+        files: list[UPLOADABLE_TYPE] | None = None,
     ) -> "Message":
+        """Edit a message in a channel."""
+        fake_process_files(files)
         message = self._fake_cache[to_snowflake(message_id)]
         message.update_from_dict(payload)
         self._fake_cache[to_snowflake(message_id)] = message
-        self.actions += (EditAction(message=message.to_dict()),)
+        self.actions += (EditAction(message=message.to_dict(),channel_id=int(to_snowflake(channel_id))),)
         return message
 
     async def create_reaction(
         self, channel_id: "Snowflake_Type", message_id: "Snowflake_Type", emoji: str
     ) -> None:
+        """Create a reaction on a message."""
         self._fake_cache[to_snowflake(message_id)].reactions.append(emoji)
         self.actions += (
-            CreateReactionAction(message_id=to_snowflake(message_id), emoji=emoji),
+            CreateReactionAction(message_id=to_snowflake(message_id), emoji=emoji, channel_id=to_snowflake(channel_id)),
         )

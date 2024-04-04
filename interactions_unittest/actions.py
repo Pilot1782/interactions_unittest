@@ -4,9 +4,10 @@ This module contains the different action classes that can be returned by the in
 from abc import ABC
 from enum import Enum
 import time
+from typing import Optional
 
 class ActionType(str, Enum):
-    """ An enumeration of the different action types. """
+    """An enumeration of the different action types."""
 
     DEFER = "defer"
     SEND = "send"
@@ -18,7 +19,7 @@ class ActionType(str, Enum):
 
 
 class BaseAction(ABC):
-    """ The base action class.  """
+    """The base action class."""
 
     action_type: ActionType
     creation_time: float
@@ -28,7 +29,8 @@ class BaseAction(ABC):
 
 
 class DeferAction(BaseAction):
-    """ The defer action class with ephemeral attribute. """
+    """The defer action class with ephemeral attribute."""
+
     action_type = ActionType.DEFER
     ephemeral: bool
 
@@ -38,7 +40,8 @@ class DeferAction(BaseAction):
 
 
 class SendAction(BaseAction):
-    """ The send action class with message attribute. """
+    """The send action class with message attribute."""
+
     action_type = ActionType.SEND
     message: dict
 
@@ -48,39 +51,51 @@ class SendAction(BaseAction):
 
 
 class DeleteAction(BaseAction):
-    """ The delete action class with message_id attribute. """
+    """The delete action class with message_id attribute."""
+
     action_type = ActionType.DELETE
     message_id: int
+    channel_id:Optional[int]
+    reason:Optional[str]
 
-    def __init__(self, message_id: int):
+    def __init__(self, message_id: int,channel_id:Optional[int] = None,reason:Optional[str] = None):
         super().__init__()
         self.message_id = message_id
+        self.channel_id = channel_id
+        self.reason = reason
 
 
 class EditAction(BaseAction):
-    """ The edit action class with message attribute. """
+    """The edit action class with message attribute."""
+
     action_type = ActionType.EDIT
     message: dict
+    channel_id:Optional[int]
 
-    def __init__(self, message: dict):
+    def __init__(self, message: dict, channel_id:Optional[int] = None):
         super().__init__()
         self.message = message
+        self.channel_id = channel_id
 
 
 class CreateReactionAction(BaseAction):
-    """ The create reaction action class with message_id and emoji attributes. """
+    """The create reaction action class with message_id and emoji attributes."""
+
     action_type = ActionType.CREATE_REACTION
     message_id: int
     emoji: str
+    channel_id:Optional[int]
 
-    def __init__(self, message_id: int, emoji: str):
+    def __init__(self, message_id: int, emoji: str ,channel_id:Optional[int] = None):
         super().__init__()
         self.message_id = message_id
         self.emoji = emoji
+        self.channel_id = channel_id
 
 
 class SendModalAction(BaseAction):
-    """ The send modal action class with modal attribute. """
+    """The send modal action class with modal attribute."""
+
     action_type = ActionType.SEND_MODAL
     modal: dict
 
@@ -90,7 +105,8 @@ class SendModalAction(BaseAction):
 
 
 class SendChoicesAction(BaseAction):
-    """ The send choices action class with choices attribute. """
+    """The send choices action class with choices attribute."""
+
     action_type = ActionType.SEND_CHOICES
     choices: list[dict]
 

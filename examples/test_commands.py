@@ -1,6 +1,4 @@
-"""
-This module contains the unit tests for the commands module.
-"""
+""" This module contains the unit tests for the commands module. """
 import unittest
 
 from commands import (
@@ -15,6 +13,7 @@ from interactions_unittest import ActionType, call_slash, get_client, FakeGuild
 
 class TestCommands(unittest.IsolatedAsyncioTestCase):
     """ The unit tests for the commands module. """
+
     async def test_example_slash(self):
         """ Test the example slash command. """
         actions = await call_slash(example_slash, option="test")
