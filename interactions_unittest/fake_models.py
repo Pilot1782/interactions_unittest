@@ -182,7 +182,7 @@ class FakeClient(Client):
 
     def command(self, *args, **kwargs):
         """dummy function to suppress abstract method error"""
-        print(args, kwargs)
+        print(self, args, kwargs)
 
 
 class FakeHttp(HTTPClient):

@@ -1,4 +1,5 @@
-""" Example commands """
+"""Example commands"""
+
 import interactions
 from interactions import (
     slash_command,
@@ -22,7 +23,7 @@ from interactions import (
     ],
 )
 async def example_slash(ctx: SlashContext, option: str = None) -> None:
-    """ Example command """
+    """Example command"""
     await ctx.defer(ephemeral=True)
 
     embed = Embed(
@@ -47,7 +48,7 @@ async def example_slash(ctx: SlashContext, option: str = None) -> None:
     description="List channel command",
 )
 async def list_channel_slash(ctx: SlashContext) -> None:
-    """ List channel command """
+    """List channel command"""
     await ctx.defer(ephemeral=True)
 
     channels = ctx.guild.channels
@@ -63,7 +64,7 @@ async def list_channel_slash(ctx: SlashContext) -> None:
     description="List role command",
 )
 async def list_role_slash(ctx: SlashContext) -> None:
-    """ List role command """
+    """List role command"""
     await ctx.defer(ephemeral=True)
 
     roles = ctx.guild.roles
@@ -77,7 +78,7 @@ async def list_role_slash(ctx: SlashContext) -> None:
     description="List member command",
 )
 async def list_member_slash(ctx: SlashContext) -> None:
-    """ List member command """
+    """List member command"""
     await ctx.defer(ephemeral=True)
 
     members = ctx.guild.members
@@ -89,7 +90,8 @@ async def list_member_slash(ctx: SlashContext) -> None:
 
 
 class MyExtension(interactions.Extension):
-    """ My extension class """
+    """My extension class"""
+
     @interactions.slash_command(
         name="ping",
         description="Ping command",
@@ -105,7 +107,7 @@ class MyExtension(interactions.Extension):
     async def ping_slash(
         self, ctx: interactions.SlashContext, option: str = None
     ) -> None:
-        """ Ping command """
+        """Ping command"""
         await ctx.defer(ephemeral=True)
 
         msg = await ctx.send("Please hold...")
