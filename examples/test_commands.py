@@ -1,7 +1,10 @@
+"""
+This module contains the unit tests for the commands module.
+"""
 import unittest
 
 from commands import (
-    test_slash,
+    example_slash,
     MyExtension,
     list_channel_slash,
     list_role_slash,
@@ -11,8 +14,10 @@ from interactions_unittest import ActionType, call_slash, get_client, FakeGuild
 
 
 class TestCommands(unittest.IsolatedAsyncioTestCase):
-    async def test_test_slash(self):
-        actions = await call_slash(test_slash, option="test")
+    """ The unit tests for the commands module. """
+    async def test_example_slash(self):
+        """ Test the example slash command. """
+        actions = await call_slash(example_slash, option="test")
 
         self.assertTrue(len(actions) == 4)
         self.assertTrue(actions[0].action_type == ActionType.DEFER, f"Action 0: {actions[0]}")
@@ -21,6 +26,7 @@ class TestCommands(unittest.IsolatedAsyncioTestCase):
         self.assertTrue(actions[3].action_type == ActionType.DELETE, f"Action 3: {actions[3]}")
 
     async def test_list_channel_slash(self):
+        """ Test the list channel slash command. """
         client = get_client()
         fake_guild = FakeGuild(
             client=client,
@@ -49,6 +55,7 @@ class TestCommands(unittest.IsolatedAsyncioTestCase):
         )
 
     async def test_list_role_slash(self):
+        """ Test the list role slash command. """
         client = get_client()
         fake_guild = FakeGuild(
             client=client,
@@ -74,6 +81,7 @@ class TestCommands(unittest.IsolatedAsyncioTestCase):
         )
 
     async def test_list_member_slash(self):
+        """ Test the list member slash command. """
         client = get_client()
         fake_guild = FakeGuild(
             client=client,
@@ -104,7 +112,8 @@ class TestCommands(unittest.IsolatedAsyncioTestCase):
             f'Action 1: {actions[1].message["content"]}',
         )
 
-    async def test_extension(self):
+    async def test_extension_ping(self):
+        """ Test the extension class with the ping slash command. """
         bot = get_client()
         bot.load_extension("commands")
 
