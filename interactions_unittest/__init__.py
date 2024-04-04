@@ -146,7 +146,8 @@ def organize_kwargs(args: tuple, kwargs: dict[str, typing.Any], ctx: FakeSlashCo
     """
     Organize the keyword arguments.
 
-    Keyword arguments that start with "test_ctx_" will be set as attributes (without prefix) of the context object and removed from the kwargs.
+    Keyword arguments that start with "test_ctx_" will be set as attributes (without prefix) of
+    the context object and removed from the kwargs.
 
     :param args: The positional arguments.
     :param kwargs: The keyword arguments.

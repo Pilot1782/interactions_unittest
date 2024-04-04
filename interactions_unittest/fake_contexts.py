@@ -40,8 +40,9 @@ class FakeSlashContext(SlashContext):
     A fake SlashContext class for testing
 
     This class is used to simulate a SlashContext object for testing purposes.
-    It will avoid calling the Discord API and instead store the actions that would be taken in a list.
-    It is meant to be used with the other fake classes in this module.
+    It will avoid calling the Discord API and instead store the actions that
+    would be taken in a list. It is meant to be used with the other fake classes
+    in this module.
     """
 
     __slots__ = ("actions", "_fake_cache", "http")
@@ -322,7 +323,6 @@ class FakeAutoCompleteContext(FakeSlashContext):
     A fake AutoCompleteContext class for testing
 
     For simplicity, this class is a subclass of FakeSlashContext instead of BaseInteractionContext.
-    resulting in argemument rename warning
     """
 
     fake_input_text: str
@@ -336,14 +336,16 @@ class FakeAutoCompleteContext(FakeSlashContext):
         super().__init__(client)
         self.fake_input_text = input_text
 
-    async def send(
+    async def send_choices(
         self,
         choices: typing.Iterable[
             str | int | float | dict[str, int | float | str] | SlashCommandChoice
         ],
     ) -> None:
         """
-        Send your autocomplete choices to discord. Choices must be either a list of strings, or a dictionary following the following format:
+        Send your autocomplete choices to discord.
+
+        Choices must be either a list of strings, or a dictionary following the following format:
 
         ```json
             {
@@ -351,8 +353,8 @@ class FakeAutoCompleteContext(FakeSlashContext):
               "value": str
             }
         ```
-        Where name is the text visible in Discord, and value is the data sent back to your client when that choice is
-        chosen.
+        Where name is the text visible in Discord, and value is the data sent back to your client
+        when that choice is chosen.
 
         Args:
             choices: 25 choices the user can pick
@@ -373,6 +375,8 @@ class FakeAutoCompleteContext(FakeSlashContext):
 
             processed_choices.append({"name": name, "value": value})
         self.actions += (SendChoicesAction(choices=deepcopy(processed_choices)),)
+
+    send = send_choices
 
 
 class FakeComponentContext(FakeSlashContext):
