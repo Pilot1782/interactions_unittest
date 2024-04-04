@@ -1,4 +1,5 @@
 """Fake context classes for testing purposes."""
+
 import typing
 from copy import deepcopy
 
@@ -32,7 +33,6 @@ from .actions import (
 )
 from .helpers import random_snowflake, fake_process_files
 from .fake_models import FakeChannel, FakeGuild, FakeMember
-
 
 
 class FakeSlashContext(SlashContext):
@@ -127,9 +127,9 @@ class FakeSlashContext(SlashContext):
             typing.Union[MessageReference, Message, dict, "Snowflake_Type"]
         ] = None,
         files: typing.Optional[
-            typing.Union["UPLOADABLE_TYPE", typing.Iterable["UPLOADABLE_TYPE"]]
+            typing.Union[UPLOADABLE_TYPE, typing.Iterable[UPLOADABLE_TYPE]]
         ] = None,
-        file: typing.Optional["UPLOADABLE_TYPE"] = None,
+        file: typing.Optional[UPLOADABLE_TYPE] = None,
         tts: bool = False,
         suppress_embeds: bool = False,
         silent: bool = False,
@@ -202,7 +202,6 @@ class FakeSlashContext(SlashContext):
                 for embed in message_data["embeds"]
             ]
 
-
     def fake_process_flags(self, suppress_embeds, silent, flags, ephemeral):
         """Construct the flags."""
         flags = MessageFlags(flags or 0)
@@ -267,9 +266,9 @@ class FakeSlashContext(SlashContext):
         attachments: typing.Optional[typing.Sequence[Attachment | dict]] = None,
         allowed_mentions: typing.Optional[typing.Union[AllowedMentions, dict]] = None,
         files: typing.Optional[
-            typing.Union["UPLOADABLE_TYPE", typing.Iterable["UPLOADABLE_TYPE"]]
+            typing.Union[UPLOADABLE_TYPE, typing.Iterable[UPLOADABLE_TYPE]]
         ] = None,
-        file: typing.Optional["UPLOADABLE_TYPE"] = None,
+        file: typing.Optional[UPLOADABLE_TYPE] = None,
         tts: bool = False,
     ) -> "interactions.Message":
         """Edit a message sent in response to this interaction."""
@@ -322,7 +321,7 @@ class FakeAutoCompleteContext(FakeSlashContext):
     """
     A fake AutoCompleteContext class for testing
 
-    For simplicity, this class is a subclass of FakeSlashContext instead of BaseInteractionContext. 
+    For simplicity, this class is a subclass of FakeSlashContext instead of BaseInteractionContext.
     resulting in argemument rename warning
     """
 

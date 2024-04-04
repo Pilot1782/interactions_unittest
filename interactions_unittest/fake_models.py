@@ -1,4 +1,5 @@
 """Fake models for testing purposes."""
+
 import typing
 from interactions import (
     UPLOADABLE_TYPE,
@@ -24,6 +25,7 @@ from .actions import (
     EditAction,
 )
 from .helpers import random_snowflake, fake_process_files
+
 
 class FakeGuild(Guild):
     """A fake Guild class for testing."""
@@ -180,7 +182,7 @@ class FakeClient(Client):
 
     def command(self, *args, **kwargs):
         """dummy function to suppress abstract method error"""
-        pass
+        print(args, kwargs)
 
 
 class FakeHttp(HTTPClient):
@@ -203,7 +205,13 @@ class FakeHttp(HTTPClient):
         reason: str | None = None,
     ) -> None:
         """Delete a message from a channel."""
-        self.actions += (DeleteAction(message_id=to_snowflake(message_id),channel_id=int(to_snowflake(channel_id)),reason=reason),)
+        self.actions += (
+            DeleteAction(
+                message_id=to_snowflake(message_id),
+                channel_id=int(to_snowflake(channel_id)),
+                reason=reason,
+            ),
+        )
         del self._fake_cache[to_snowflake(message_id)]
 
     async def edit_message(
@@ -218,7 +226,11 @@ class FakeHttp(HTTPClient):
         message = self._fake_cache[to_snowflake(message_id)]
         message.update_from_dict(payload)
         self._fake_cache[to_snowflake(message_id)] = message
-        self.actions += (EditAction(message=message.to_dict(),channel_id=int(to_snowflake(channel_id))),)
+        self.actions += (
+            EditAction(
+                message=message.to_dict(), channel_id=int(to_snowflake(channel_id))
+            ),
+        )
         return message
 
     async def create_reaction(
@@ -227,5 +239,9 @@ class FakeHttp(HTTPClient):
         """Create a reaction on a message."""
         self._fake_cache[to_snowflake(message_id)].reactions.append(emoji)
         self.actions += (
-            CreateReactionAction(message_id=to_snowflake(message_id), emoji=emoji, channel_id=to_snowflake(channel_id)),
+            CreateReactionAction(
+                message_id=to_snowflake(message_id),
+                emoji=emoji,
+                channel_id=to_snowflake(channel_id),
+            ),
         )
