@@ -46,6 +46,27 @@ class FakeGuild(Guild):
     def members(self) -> typing.List["Member"]:
         return self.fake_members
 
+    def get_member(self, member_id: Snowflake_Type) -> Member | None:
+        return next(
+            (member for member in self.members if member.id == to_snowflake(member_id)),
+            None,
+        )
+
+    def get_role(self, role_id: Snowflake_Type) -> Role | None:
+        return next(
+            (role for role in self.roles if role.id == to_snowflake(role_id)), None
+        )
+
+    def get_channel(self, channel_id: Snowflake_Type) -> GuildChannel | None:
+        return next(
+            (
+                channel
+                for channel in self.channels
+                if channel.id == to_snowflake(channel_id)
+            ),
+            None,
+        )
+
     def __init__(
         self,
         channel_names: dict[str, list[str]],
@@ -67,11 +88,14 @@ class FakeGuild(Guild):
         self.fake_channel = []
         self.fake_roles = []
         self.fake_members = []
+        self.client.fake_guilds.append(self)
         for channel, sub_channels in channel_names.items():
             channel_id = random_snowflake()
             if not sub_channels:
                 self.channels.append(
-                    FakeChannel(client=client, name=channel, id=channel_id)
+                    FakeChannel(
+                        client=client, name=channel, id=channel_id, guild_id=self.id
+                    )
                 )
             else:
                 category = FakeCategory(
@@ -84,6 +108,7 @@ class FakeGuild(Guild):
                         name=sub_channel_name,
                         id=random_snowflake(),
                         parent_id=category.id,
+                        guild_id=self.id,
                     )
                     self.channels.append(sub_channel)
                     category.channels.append(sub_channel)
@@ -149,6 +174,17 @@ class FakeCategory(GuildCategory):
 class FakeChannel(GuildChannel):
     """A fake Channel class for testing"""
 
+    fake_guild_id: int
+
+    @property
+    def category(self) -> typing.Optional["GuildCategory"]:
+        guild: FakeGuild | None = next(
+            (g for g in self.client.fake_guilds if g.id == self.fake_guild_id), None
+        )
+        return next(
+            channel for channel in guild.channels if channel.id == self.parent_id
+        )
+
     async def delete_message(self, message: "Snowflake_Type") -> None:
         """Delete a message from the channel."""
         self.client.http.delete_message(self.id, message.id)
@@ -159,6 +195,7 @@ class FakeChannel(GuildChannel):
         return self.client.fake_get_message(message_id)
 
     def __init__(self, *args, **kwargs):
+        self.fake_guild_id = kwargs.pop("guild_id", 0)
         super().__init__(type=ChannelType.GUILD_TEXT, *args, **kwargs)
 
 
@@ -174,6 +211,7 @@ class FakeClient(Client):
     __slots__ = ("_fake_cache", "actions")
     _fake_cache: dict[int, "Message"]
     actions: tuple[BaseAction, ...]
+    fake_guilds: list[FakeGuild]
 
     def fake_get_message(self, message_id: "Snowflake_Type") -> "Message":
         """Get a message from the cache."""
@@ -181,6 +219,7 @@ class FakeClient(Client):
 
     def __init__(self, *args, **kwargs):
         self._fake_cache = {}
+        self.fake_guilds = []
         self.actions = ()
         super().__init__(*args, **kwargs)
         self.http = FakeHttp(client=self)
