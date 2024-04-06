@@ -47,17 +47,20 @@ class FakeGuild(Guild):
         return self.fake_members
 
     def get_member(self, member_id: Snowflake_Type) -> Member | None:
+        """Get a member by id."""
         return next(
             (member for member in self.members if member.id == to_snowflake(member_id)),
             None,
         )
 
     def get_role(self, role_id: Snowflake_Type) -> Role | None:
+        """Get a role by id."""
         return next(
             (role for role in self.roles if role.id == to_snowflake(role_id)), None
         )
 
     def get_channel(self, channel_id: Snowflake_Type) -> GuildChannel | None:
+        """Get a channel by id."""
         return next(
             (
                 channel
@@ -182,7 +185,8 @@ class FakeChannel(GuildChannel):
             (g for g in self.client.fake_guilds if g.id == self.fake_guild_id), None
         )
         return next(
-            channel for channel in guild.channels if channel.id == self.parent_id
+            (channel for channel in guild.channels if channel.id == self.parent_id),
+            None,
         )
 
     async def delete_message(self, message: "Snowflake_Type") -> None:
