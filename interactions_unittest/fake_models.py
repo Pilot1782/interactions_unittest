@@ -1,6 +1,7 @@
 """Fake models for testing purposes."""
 
 import typing
+
 from interactions import (
     UPLOADABLE_TYPE,
     ChannelType,
@@ -17,14 +18,13 @@ from interactions import (
 )
 from interactions.api.http.http_client import HTTPClient
 
-
 from .actions import (
     BaseAction,
     CreateReactionAction,
     DeleteAction,
     EditAction,
 )
-from .helpers import random_snowflake, fake_process_files
+from .helpers import fake_process_files, random_snowflake
 
 
 class FakeGuild(Guild):
@@ -74,7 +74,9 @@ class FakeGuild(Guild):
                     FakeChannel(client=client, name=channel, id=channel_id)
                 )
             else:
-                category = FakeCategory(client=client, name=channel, id=channel_id)
+                category = FakeCategory(
+                    client=client, name=channel, id=channel_id, guild_id=self.id
+                )
                 self.channels.append(category)
                 for sub_channel_name in sub_channels:
                     sub_channel = FakeChannel(
@@ -133,8 +135,15 @@ class FakeMember(Member):
 class FakeCategory(GuildCategory):
     """A fake Category class for testing"""
 
+    fake_channel: typing.Optional["FakeChannel"]
+
+    @property
+    def channels(self) -> typing.List["GuildChannel"]:
+        return self.fake_channel
+
     def __init__(self, *args, **kwargs):
         super().__init__(type=ChannelType.GUILD_CATEGORY, *args, **kwargs)
+        self.fake_channel = []
 
 
 class FakeChannel(GuildChannel):

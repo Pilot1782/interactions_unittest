@@ -2,11 +2,11 @@
 
 import interactions
 from interactions import (
-    slash_command,
-    SlashContext,
-    SlashCommandOption,
-    OptionType,
     Embed,
+    OptionType,
+    SlashCommandOption,
+    SlashContext,
+    slash_command,
 )
 
 
@@ -56,6 +56,30 @@ async def list_channel_slash(ctx: SlashContext) -> None:
 
     await ctx.send(
         f"Channels in {ctx.guild_id} {ctx.guild.name}:\n{channel_list}", ephemeral=True
+    )
+
+
+@slash_command(
+    name="list_category",
+    description="List category command",
+)
+async def list_category_slash(ctx: SlashContext) -> None:
+    """List category command"""
+    await ctx.defer(ephemeral=True)
+
+    categories = [
+        channel
+        for channel in ctx.guild.channels
+        if channel.type == interactions.ChannelType.GUILD_CATEGORY
+    ]
+    result = ""
+    for category in categories:
+        result += f"{category.name} ({category.id})\n"
+        for channel in category.channels:
+            result += f"    {channel.name} ({channel.id})\n"
+
+    await ctx.send(
+        f"Categories in {ctx.guild_id} {ctx.guild.name}:\n{result}", ephemeral=True
     )
 
 
