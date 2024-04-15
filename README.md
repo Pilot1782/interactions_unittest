@@ -38,25 +38,33 @@ async def ping(ctx: interactions.SlashContext, extra: str = None):
 class TestPing(unittest.IsolatedAsyncioTestCase):
     async def test_ping(self):
         actions = await itest.call_slash(ping, extra="extra text")
-        self.assertTrue(actions[0]["action"] == "send")
-        self.assertTrue(actions[0]["message"]["content"] == "Pong! extra text")
+        self.assertTrue(actions[0].action_type == itest.ActionType.SEND)
+        self.assertTrue(actions[0].message["content"] == "Pong! extra text")
 ```
 
 ## Documentation
 
-The `call_slash` method allows you to call a slash command with arguments, it will return a list of action dicts.
+The `call_slash` method allows you to call a slash command with arguments, it will return a list of actions.
+The `call_component` method allows you to call a component interaction, it will return a list of actions.
+The `call_autocomplete` method allows you to call an autocomplete interaction, it will return a list of actions.
 
-Each action dict has the following keys:
-- `action`: The action that was performed, ex: `send`, `edit`, `delete`, `defer`
-- `message`: The message that was sent, edited or deleted
+Each action has an `action_type` attribute that can be used to determine the type of action an a `creation_time` attribute that can be used to determine the order of the actions. For each action there is a subclass containing the data of the action.
 
 ## Features
 - [X] context.edit message
 - [X] context.delete message
 - [X] context.send message
 - [X] context.defer
+- [X] context.send_modal
+- [X] channel.get_message
+- [X] channel.delete_message
+- [X] component interaction
+- [X] autocomplete interaction
 - [X] message.delete
 - [X] message.edit
 - [X] message.reply
 - [X] message.react
 - [X] extensions
+
+## TODO
+- [ ] Add more examples
